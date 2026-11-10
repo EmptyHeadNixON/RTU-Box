@@ -1,0 +1,3989 @@
+<!-- @Dev Bukhteev N.A. -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RTU-Box V3.2</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231f6feb'/><text x='50%' y='58%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='monospace' font-weight='bold' font-size='44'>‹M›</text></svg>">
+  <style>
+    /* ==========================================================================
+       1. ПЕРЕМЕННЫЕ И БАЗОВЫЕ СТИЛИ
+       ========================================================================== */
+    :root {
+      --bg-main: #0d1117;
+      --bg-panel: #161b22;
+      --bg-card: #1f2631;
+      --bg-input: #090d11;
+      --border-color: #30363d;
+      --border-focus: #388bfd;
+      --text-main: #e6edf3;
+      --text-muted: #8b949e;
+      --accent-blue: #2f81f7;
+      --accent-blue-hover: #388bfd;
+      --tx-color: #39c5cf;
+      --tx-bg: rgba(57, 197, 207, 0.12);
+      --rx-color: #3fb950;
+      --rx-bg: rgba(63, 185, 80, 0.12);
+      --slave-color: #d2a8ff;
+      --master-color: #ffe818;
+      --scaner-color: #0bd2d9;
+      --hex-color: #012bff;
+      --guide-color: #79c0ff;
+      --slave-bg: rgba(210, 168, 255, 0.14);
+      --err-color: #f85149;
+      --err-bg: rgba(248, 81, 73, 0.16);
+      --warn-color: #d29922;
+      --warn-bg: rgba(210, 153, 34, 0.15);
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      font-size: 13.5px;
+      line-height: 1.45;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==========================================================================
+       2. ВСПЛЫВАЮЩИЕ ПОДСКАЗКИ (TOOLTIPS)
+       ========================================================================== */
+    .help-tip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: rgba(56, 139, 253, 0.18);
+      border: 1px solid rgba(56, 139, 253, 0.45);
+      color: #79c0ff;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: help;
+      position: relative;
+      margin-left: 4px;
+      vertical-align: middle;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .help-tip::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 265px;
+      padding: 8px 10px;
+      background-color: #090d11;
+      color: var(--text-main);
+      border: 1px solid var(--accent-blue);
+      border-radius: 6px;
+      font-family: var(--font-ui);
+      font-size: 11.5px;
+      font-weight: 400;
+      line-height: 1.4;
+      text-transform: none;
+      letter-spacing: normal;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 999;
+      white-space: normal;
+      text-align: left;
+    }
+
+    .help-tip.tip-right::after { left: 0; transform: none; }
+    .help-tip.tip-left::after { left: auto; right: 0; transform: none; }
+    .help-tip:hover::after { opacity: 1; visibility: visible; }
+
+    /* ==========================================================================
+       3. ШАПКА ПРИЛОЖЕНИЯ И ИНДИКАТОРЫ СОСТОЯНИЯ
+       ========================================================================== */
+    header {
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #1f6feb, #238636);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 15px;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      letter-spacing: -0.5px;
+    }
+
+    .brand-title h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .brand-title span {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--text-muted);
+    }
+
+    .dot.connected {
+      background-color: var(--rx-color);
+      box-shadow: 0 0 8px var(--rx-color);
+    }
+
+    .dot.active-mode {
+      background-color: var(--warn-color);
+      box-shadow: 0 0 8px var(--warn-color);
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    /* ==========================================================================
+       4. ОСНОВНАЯ СЕТКА
+       ========================================================================== */
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 590px 1fr;
+      gap: 14px;
+      padding: 14px;
+      max-width: 1920px;
+      width: 100%;
+      margin: 0 auto;
+      align-items: stretch;
+    }
+
+    @media (max-width: 1240px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .main-area {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .panel {
+      background-color: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: visible;
+    }
+
+    .panel-header {
+      padding: 9px 14px;
+      background-color: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 12.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .panel-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ==========================================================================
+       5. ФОРМЫ, ПОЛЯ ВВОДА И КНОПКИ
+       ========================================================================== */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* Сетка для калькулятора Modicon с широкой первой колонкой под название области памяти */
+    .form-grid-modcalc {
+      display: grid;
+      grid-template-columns: 1.55fr 0.9fr 0.95fr;
+      gap: 8px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+    }
+
+    select, input[type="text"], input[type="number"], textarea {
+      background-color: var(--bg-input);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      padding: 6px 8px;
+      font-size: 12.5px;
+      font-family: var(--font-ui);
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    input.mono, textarea.mono, select.mono {
+      font-family: var(--font-mono);
+    }
+
+    select:focus, input:focus, textarea:focus {
+      border-color: var(--border-focus);
+    }
+
+    select:disabled, input:disabled, button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 11px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .btn-sm {
+      padding: 5px 9px;
+      font-size: 11.5px;
+    }
+
+    .btn-xs {
+      padding: 2px 7px;
+      font-size: 10.5px;
+    }
+
+    .btn-primary { background-color: var(--accent-blue); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background-color: var(--accent-blue-hover); }
+
+    .btn-danger { background-color: #da3633; color: #fff; }
+    .btn-danger:hover:not(:disabled) { background-color: var(--err-color); }
+
+    .btn-secondary {
+      background-color: var(--bg-card);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background-color: #293241;
+      border-color: #484f58;
+    }
+
+    .btn-success { background-color: #238636; color: #fff; }
+    .btn-success:hover:not(:disabled) { background-color: #2ea043; }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 10px;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--accent-blue);
+      cursor: pointer;
+    }
+
+    .interface-hint {
+      font-size: 11.5px;
+      padding: 8px 10px;
+      border-radius: 5px;
+      background-color: rgba(47, 129, 247, 0.1);
+      border-left: 3px solid var(--accent-blue);
+      color: #c9d1d9;
+    }
+
+    .rs232-signals {
+      padding: 9px;
+      background-color: var(--bg-card);
+      border: 1px dashed var(--border-color);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .rs232-signals.hidden { display: none; }
+
+    .signal-toggles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* ==========================================================================
+       6. ВКЛАДКИ ИНСТРУМЕНТОВ, АВТОПЕРЕБОР СКОРОСТЕЙ И КАРТА SLAVE
+       ========================================================================== */
+    .tabs-header {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      border-bottom: 1px solid var(--border-color);
+      background-color: var(--bg-card);
+    }
+
+    .tab-btn {
+      padding: 8px 4px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 11.5px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .tab-btn.active {
+      color: var(--text-main);
+      border-bottom-color: var(--accent-blue);
+      background-color: var(--bg-panel);
+    }
+
+    .tab-content {
+      display: none;
+      padding: 12px 14px;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    .frame-preview {
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      padding: 7px 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .frame-bytes { color: var(--tx-color); word-break: break-all; }
+    .frame-crc { color: var(--warn-color); font-weight: 700; }
+
+    .polling-box {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 9px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .polling-stats {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    /* Блок перебора скоростей в Сканере шины */
+    .autobaud-box {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 9px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .autobaud-options {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 6px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .autobaud-options.visible {
+      display: flex;
+    }
+
+    .baud-pills-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .baud-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 7px;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .baud-pill input[type="checkbox"] {
+      width: 13px;
+      height: 13px;
+      accent-color: var(--accent-blue);
+      cursor: pointer;
+    }
+
+    .progress-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--rx-color));
+      transition: width 0.1s linear;
+    }
+
+    .scan-results {
+      max-height: 190px;
+      overflow-y: auto;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+    }
+
+    .scan-item {
+      padding: 6px 8px;
+      border-radius: 4px;
+      background-color: rgba(63, 185, 80, 0.1);
+      border: 1px solid rgba(63, 185, 80, 0.35);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scan-item.exc {
+      background-color: var(--warn-bg);
+      border-color: rgba(210, 153, 34, 0.4);
+    }
+
+    /* Блоки вкладки Эмулятора Slave */
+    .slave-step-box {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slave-step-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #79c0ff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .csv-toolbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto auto;
+      gap: 5px;
+    }
+
+    /* Двухстрочная панель добавления регистра, чтобы стандартизированные названия областей памяти не обрезались */
+    .add-reg-bar {
+      display: grid;
+      grid-template-columns: 1.5fr 0.8fr 0.8fr;
+      gap: 7px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .add-reg-bar-bottom {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 7px;
+      align-items: end;
+    }
+
+    .slave-reg-table-wrap {
+      max-height: 320px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      background-color: var(--bg-input);
+    }
+
+    table.slave-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      table-layout: fixed;
+    }
+
+    table.slave-table th {
+      position: sticky;
+      top: 0;
+      background-color: var(--bg-panel);
+      color: var(--text-muted);
+      padding: 6px 6px;
+      text-align: left;
+      font-size: 10.5px;
+      border-bottom: 1px solid var(--border-color);
+      z-index: 1;
+    }
+
+    table.slave-table td {
+      padding: 5px 6px;
+      border-bottom: 1px solid rgba(48, 54, 61, 0.45);
+      vertical-align: middle;
+    }
+
+    table.slave-table .col-s-addr  { width: 126px; }
+    table.slave-table .col-s-name  { width: auto; }
+    table.slave-table .col-s-val   { width: 84px; }
+    table.slave-table .col-s-drift { width: 38px; text-align: center; }
+    table.slave-table .col-s-act   { width: 96px; }
+    table.slave-table .col-s-del   { width: 30px; text-align: right; }
+
+    table.slave-table input[type="number"] {
+      padding: 4px 6px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+
+    table.slave-table input.tag-name-input {
+      padding: 4px 7px;
+      font-size: 12.5px;
+      font-family: var(--font-ui);
+      font-weight: 500;
+      color: #fff;
+      background-color: rgba(255, 255, 255, 0.03);
+      width: 100%;
+    }
+
+    .area-badge {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      margin-right: 4px;
+    }
+
+    .area-holding { background: rgba(57, 197, 207, 0.15); color: var(--tx-color); }
+    .area-input   { background: rgba(63, 185, 80, 0.15); color: var(--rx-color); }
+    .area-coil    { background: rgba(210, 168, 255, 0.15); color: var(--slave-color); }
+    .area-di      { background: rgba(210, 153, 34, 0.15); color: var(--warn-color); }
+
+    .modicon-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 1px;
+    }
+
+    .act-pill {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      background-color: rgba(255,255,255,0.05);
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .act-pill.read { background-color: var(--rx-bg); color: var(--rx-color); }
+    .act-pill.write { background-color: var(--slave-bg); color: var(--slave-color); font-weight: 600; }
+
+    tr.reg-updated {
+      animation: flashHighlight 1.1s ease;
+    }
+
+    @keyframes flashHighlight {
+      0% { background-color: rgba(210, 168, 255, 0.45); }
+      100% { background-color: transparent; }
+    }
+
+    /* ==========================================================================
+       7. ВЫПАДАЮЩИЕ СПИСКИ (АККОРДЕОН) ДЛЯ ВКЛАДКИ «ПЛК ИНФО»
+       ========================================================================== */
+    details.guide-dropdown {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+
+    details.guide-dropdown[open] {
+      border-color: rgba(56, 139, 253, 0.55);
+    }
+
+    summary.guide-summary {
+      padding: 9px 12px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #79c0ff;
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    summary.guide-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary.guide-summary::after {
+      content: "▼";
+      font-size: 10px;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+
+    details.guide-dropdown[open] summary.guide-summary::after {
+      transform: rotate(180deg);
+      color: #79c0ff;
+    }
+
+    summary.guide-summary:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .guide-body {
+      padding: 10px 12px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .guide-body ul {
+      padding-left: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .calc-result-box {
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      padding: 8px 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Таблица областей памяти стандарта Modbus */
+    table.std-area-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+      font-family: var(--font-mono);
+      margin-top: 4px;
+    }
+
+    table.std-area-table th, table.std-area-table td {
+      border: 1px solid var(--border-color);
+      padding: 5px 7px;
+      text-align: left;
+    }
+
+    table.std-area-table th {
+      background-color: var(--bg-panel);
+      color: var(--text-muted);
+    }
+
+    /* ==========================================================================
+       8. ПАНЕЛЬ СНИФФЕРА И ТАБЛИЦА ЛОГА
+       ========================================================================== */
+    .log-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 14px;
+      max-height: calc(100vh - 28px);
+    }
+
+    .log-toolbar {
+      padding: 9px 14px;
+      background-color: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .mode-segmented {
+      display: inline-flex;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .mode-btn {
+      padding: 5px 11px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mode-btn.active {
+      background-color: var(--accent-blue);
+      color: #fff;
+    }
+
+    .log-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .log-table-container {
+      flex: 1;
+      overflow-y: auto;
+      background-color: var(--bg-input);
+    }
+
+    table.log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    table.log-table thead th {
+      position: sticky;
+      top: 0;
+      background-color: var(--bg-panel);
+      color: var(--text-muted);
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-color);
+      z-index: 2;
+    }
+
+    table.log-table tbody tr {
+      border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+    }
+
+    table.log-table tbody tr:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+
+    table.log-table tbody tr.row-error {
+      background-color: var(--err-bg);
+    }
+
+    table.log-table td {
+      padding: 7px 12px;
+      vertical-align: top;
+    }
+
+    .col-time { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); white-space: nowrap; width: 108px; }
+    .col-dir { white-space: nowrap; width: 155px; }
+    .col-hex { font-family: var(--font-mono); font-size: 12px; word-break: break-all; min-width: 210px; }
+    .col-decoded { font-size: 12.5px; line-height: 1.45; }
+
+    .dir-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .dir-tx { background-color: var(--tx-bg); color: var(--tx-color); border: 1px solid rgba(57, 197, 207, 0.35); }
+    .dir-rx { background-color: var(--rx-bg); color: var(--rx-color); border: 1px solid rgba(63, 185, 80, 0.35); }
+    .dir-slave { background-color: var(--slave-bg); color: var(--slave-color); border: 1px solid rgba(210, 168, 255, 0.4); }
+    .dir-err { background-color: var(--err-bg); color: var(--err-color); border: 1px solid rgba(248, 81, 73, 0.5); }
+
+    .byte-id { color: #d2a8ff; font-weight: 600; }
+    .byte-fn { color: #79c0ff; font-weight: 600; }
+    .byte-data { color: var(--text-main); }
+    .byte-crc-ok { color: var(--rx-color); font-weight: 600; }
+    .byte-crc-err { color: var(--err-color); font-weight: 700; text-decoration: underline; }
+
+    .decoded-tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background-color: rgba(255, 255, 255, 0.06);
+      margin-right: 4px;
+    }
+
+    .decoded-error { color: #ffa198; font-weight: 600; }
+
+    .empty-state {
+      padding: 28px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .warning-banner {
+      background-color: var(--err-bg);
+      border: 1px solid var(--err-color);
+      color: #ffa198;
+      padding: 9px 16px;
+      margin: 10px 14px 0;
+      border-radius: 6px;
+      display: none;
+      font-size: 12.5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Предупреждение, если браузер не поддерживает Web Serial API -->
+  <div id="serialWarning" class="warning-banner">
+    <strong>Внимание:</strong> Ваш браузер не поддерживает аппаратный <code>Web Serial API</code>. Откройте этот файл в браузере на базе Chromium (Google Chrome, Microsoft Edge, Brave, Opera).
+  </div>
+
+  <!-- ШАПКА ПРИЛОЖЕНИЯ -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">‹M›</div>
+      <div class="brand-title">
+        <h1>RTU-Box (Modbus RTU Analyze tool)</h1>
+        <span>Сниффер, Мастер, Сканер шины (Auto-Baud) и Эмулятор Slave (RS-232/422/485)</span>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div class="badge" title="Статус подключения к физическому COM-порту">
+        <span id="statusDot" class="dot"></span>
+        <span id="statusText">ОТКЛЮЧЕНО</span>
+      </div>
+      <div class="badge" id="slaveActiveBadge" style="display:none; border-color: var(--slave-color);">
+        <span class="dot active-mode"></span>
+        <span style="color: var(--slave-color);">SLAVE АКТИВЕН (ID: <b id="headerSlaveId">20</b>)</span>
+      </div>
+      <div class="badge">
+        Линия: <span id="activeInterfaceBadge" style="color: var(--accent-blue);">RS-485 2W</span>
+      </div>
+      <div class="badge">
+        TX: <span id="statTx" style="color: var(--tx-color);">0</span> |
+        RX: <span id="statRx" style="color: var(--rx-color);">0</span> |
+        CRC Err: <span id="statErr" style="color: var(--err-color);">0</span> |
+        Эхо: <span id="statEcho" style="color: var(--warn-color);">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- РАБОЧАЯ ОБЛАСТЬ -->
+  <main class="workspace">
+
+    <!-- ЛЕВАЯ КОЛОНКА: НАСТРОЙКИ ПОРТА + ИНСТРУМЕНТЫ -->
+    <aside class="sidebar">
+
+      <!-- 1. ПАНЕЛЬ ПОДКЛЮЧЕНИЯ -->
+      <section class="panel">
+        <div class="panel-header">
+          <span>1. Конфигурация порта и линии</span>
+        </div>
+        <div class="panel-body">
+
+          <div class="form-grid">
+            <div class="form-group full">
+              <label for="physInterface">
+                Физический интерфейс (Режим линии)
+                <span class="help-tip tip-right" data-tip="Выберите тип подключения. Для обычной двухпроводной шины RS-485 (клеммы A+ и B-) используйте RS-485 2W.">?</span>
+              </label>
+              <select id="physInterface">
+                <option value="RS-485 2W">RS-485 2W (Полудуплекс / 2-проводной)</option>
+                <option value="RS-485 4W">RS-485 4W (Полный дуплекс / 4-проводной)</option>
+                <option value="RS-422">RS-422 (Полный дуплекс / Точка-Многоточка)</option>
+                <option value="RS-232">RS-232 (Полный дуплекс / Точка-Точка)</option>
+              </select>
+            </div>
+
+            <div class="form-group full">
+              <div id="interfaceHint" class="interface-hint">
+                Полудуплекс (Data+, Data-). Прием и передача идут по одной паре. Доступен фильтр аппаратного эха.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="baudRate">Скорость (Baud rate)</label>
+              <select id="baudRate">
+                <option value="1200">1200</option>
+                <option value="2400">2400</option>
+                <option value="4800">4800</option>
+                <option value="9600" selected>9600</option>
+                <option value="19200">19200</option>
+                <option value="38400">38400</option>
+                <option value="57600">57600</option>
+                <option value="115200">115200</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="parity">Четность (Parity)</label>
+              <select id="parity">
+                <option value="none" selected>None (Нет)</option>
+                <option value="even">Even (Чет)</option>
+                <option value="odd">Odd (Нечет)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="dataBits">Биты данных</label>
+              <select id="dataBits">
+                <option value="8" selected>8 бит (Modbus RTU)</option>
+                <option value="7">7 бит (ASCII)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="stopBits">Стоп-биты</label>
+              <select id="stopBits">
+                <option value="1" selected>1 стоп-бит</option>
+                <option value="2">2 стоп-бита</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="flowControl">Управление потоком</label>
+              <select id="flowControl">
+                <option value="none" selected>None (Нет)</option>
+                <option value="hardware">Hardware (RTS/CTS)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="packetTimeout">
+                Таймаут пакета (мс)
+                <span class="help-tip tip-left" data-tip="Пауза тишины в линии (обычно 15-25 мс), по которой программа понимает, что пакет закончился.">?</span>
+              </label>
+              <input type="number" id="packetTimeout" min="5" max="500" value="20" class="mono">
+            </div>
+          </div>
+
+          <div id="rs232SignalsBox" class="rs232-signals hidden">
+            <label>Управление сигналами модема RS-232 (в реальном времени):</label>
+            <div class="signal-toggles">
+              <label class="checkbox-label">
+                <input type="checkbox" id="sigRTS">
+                <span>Сигнал <strong>RTS</strong></span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="sigDTR" checked>
+                <span>Сигнал <strong>DTR</strong></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="checkbox-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="filterEcho" checked>
+              <span>Фильтровать собственное эхо (RS-485 2W)</span>
+            </label>
+            <span class="help-tip tip-left" data-tip="Отсекает копию нашего же отправленного пакета, если USB-свисток слышит сам себя при передаче по двум проводам.">?</span>
+          </div>
+
+          <button id="btnConnect" class="btn btn-primary" style="width: 100%; padding: 10px;">
+            Выбрать COM-порт (USB) и подключиться
+          </button>
+
+        </div>
+      </section>
+
+      <!-- 2. МНОГОФУНКЦИОНАЛЬНЫЙ БЛОК -->
+      <section class="panel">
+        <div class="panel-header">
+          <span>2. Режимы работы и эмуляция приборов</span>
+        </div>
+
+        <div class="tabs-header">
+          <button class="tab-btn active" data-tab="tabModbus" style="color: var(--master-color);">Мастер</button>
+          <button class="tab-btn" data-tab="tabScanner" style="color: var(--scaner-color);">Сканер</button>
+          <button class="tab-btn" data-tab="tabSlave" style="color: var(--slave-color);">Слейв (Карта)</button>
+          <button class="tab-btn" data-tab="tabRaw" style="color: var(--hex-color);">HEX/ASCII</button>
+          <button class="tab-btn" data-tab="tabGuide" style="color: var(--guide-color);" >📖 FAQ</button>
+        </div>
+
+        <!-- ==================================================================
+             ВКЛАДКА 1: MODBUS МАСТЕР + ЦИКЛИЧЕСКИЙ АВТООПРОС
+             ================================================================== -->
+        <div id="tabModbus" class="tab-content active">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="mbSlaveId">
+                Device ID (0–247)
+                <span class="help-tip tip-right" data-tip="Сетевой адрес опрашиваемого прибора (ПЛК, частотника, датчика).">?</span>
+              </label>
+              <input type="number" id="mbSlaveId" min="0" max="247" value="1" class="mono">
+            </div>
+
+            <div class="form-group">
+              <label for="mbFunc">
+                Функция и область памяти (Memory Area)
+                <span class="help-tip tip-left" data-tip="Стандартизированные функции Modbus с указанием области памяти (0x Coils, 1x Inputs, 3x Input Registers, 4x Holding Registers).">?</span>
+              </label>
+              <select id="mbFunc">
+                <option value="1">01 (0x01) Read Coils [0x Coils]</option>
+                <option value="2">02 (0x02) Read Inputs [1x Inputs]</option>
+                <option value="3" selected>03 (0x03) Read Holding Registers [4x Holding Registers]</option>
+                <option value="4">04 (0x04) Read Input Registers [3x Input Registers]</option>
+                <option value="5">05 (0x05) Write Single Coil [0x Coils]</option>
+                <option value="6">06 (0x06) Write Single Register [4x Holding Registers]</option>
+                <option value="16">16 (0x10) Write Multiple Registers [4x Holding Registers]</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="mbAddress">
+                Начальный адрес (DEC с 0)
+                <span class="help-tip tip-right" data-tip="Реальный десятичный адрес регистра (с нуля). Под полем ввода автоматически показывается его эквивалент в стандарте Modicon (0xxxx..4xxxx).">?</span>
+              </label>
+              <input type="number" id="mbAddress" min="0" max="65535" value="1024" class="mono">
+              <span id="mbModiconHint" style="font-size:10.5px; color:var(--tx-color); font-family:var(--font-mono);">
+                4x Holding Registers: 41025 (K41025)
+              </span>
+            </div>
+
+            <div class="form-group" id="mbCountGroup">
+              <label for="mbCountOrVal" id="mbCountLabel">Количество регистров (16 Bit)</label>
+              <input type="number" id="mbCountOrVal" min="1" max="65535" value="2" class="mono">
+            </div>
+
+            <div class="form-group" id="mbCoilGroup" style="display:none;">
+              <label for="mbCoilVal">Состояние катушки (0x Coils)</label>
+              <select id="mbCoilVal">
+                <option value="65280">ON (0xFF00 — Вкл)</option>
+                <option value="0">OFF (0x0000 — Выкл)</option>
+              </select>
+            </div>
+
+            <div class="form-group full" id="mbMultiGroup" style="display:none;">
+              <label for="mbMultiValues">Значения регистров 4x Holding Registers (через запятую/пробел, DEC или 0xHEX)</label>
+              <input type="text" id="mbMultiValues" value="100, 250, 0x03E8" class="mono">
+            </div>
+          </div>
+
+          <div class="form-group full">
+            <label>Предпросмотр кадра (с авторасчетом CRC-16):</label>
+            <div class="frame-preview">
+              <span id="mbPreviewBytes" class="frame-bytes">01 03 04 00 00 02</span>
+              <span id="mbPreviewCrc" class="frame-crc">C5 3B</span>
+            </div>
+          </div>
+
+          <button id="btnSendModbus" class="btn btn-success" disabled>
+            Однократная отправка запроса
+          </button>
+
+          <div class="polling-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:12px;">Циклический автоопрос (Polling):</strong>
+              <span id="pollStateBadge" style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">ОСТАНОВЛЕН</span>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="pollInterval">Период опроса (мс)</label>
+                <input type="number" id="pollInterval" min="50" max="60000" value="500" class="mono">
+              </div>
+              <div class="form-group" style="justify-content: flex-end;">
+                <button id="btnTogglePoll" class="btn btn-primary" disabled>
+                  ▶ Запустить опрос
+                </button>
+              </div>
+            </div>
+            <div class="polling-stats">
+              <span>Циклов TX: <b id="pollCountTx" style="color:var(--tx-color)">0</b></span>
+              <span>Ответов ОК: <b id="pollCountOk" style="color:var(--rx-color)">0</b></span>
+              <span>Таймаутов: <b id="pollCountTimeout" style="color:var(--err-color)">0</b></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             ВКЛАДКА 2: СКАНЕР ШИНЫ MODBUS + АВТОПЕРЕБОР СКОРОСТЕЙ (AUTO-BAUD)
+             ================================================================== -->
+        <div id="tabScanner" class="tab-content">
+          <div class="interface-hint">
+            Сканер последовательно опрашивает диапазон адресов Slave ID (и, при необходимости, перебирает скорости и четность порта), фиксируя все ответившие приборы.
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="scanStartId">Начальный ID (1–247)</label>
+              <input type="number" id="scanStartId" min="1" max="247" value="1" class="mono">
+            </div>
+            <div class="form-group">
+              <label for="scanEndId">Конечный ID (1–247)</label>
+              <input type="number" id="scanEndId" min="1" max="247" value="25" class="mono">
+            </div>
+
+            <div class="form-group">
+              <label for="scanFunc">Область памяти и функция</label>
+              <select id="scanFunc">
+                <option value="1">0x Coils (Fn 01 Read Coils)</option>
+                <option value="2">1x Inputs (Fn 02 Read Inputs)</option>
+                <option value="4">3x Input Registers (Fn 04 Read)</option>
+                <option value="3" selected>4x Holding Registers (Fn 03 Read)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="scanTimeout">Таймаут ответа (мс)</label>
+              <input type="number" id="scanTimeout" min="40" max="2000" value="120" class="mono">
+            </div>
+
+            <div class="form-group">
+              <label for="scanAddr">Тестовый адрес (DEC с 0)</label>
+              <input type="number" id="scanAddr" min="0" max="65535" value="0" class="mono">
+            </div>
+
+            <div class="form-group">
+              <label for="scanQty">Количество</label>
+              <input type="number" id="scanQty" min="1" max="10" value="1" class="mono">
+            </div>
+          </div>
+
+          <!-- НОВЫЙ БЛОК: ПЕРЕБОР СКОРОСТЕЙ И ЧЕТНОСТИ (AUTO-BAUD) -->
+          <div class="autobaud-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label class="checkbox-label" style="font-weight:600; color:#79c0ff;">
+                <input type="checkbox" id="scanAutoBaud">
+                <span>Включить перебор скоростей порта (Auto-Baud)</span>
+              </label>
+              <span class="help-tip tip-left" data-tip="Позволяет найти прибор с неизвестной скоростью и четностью! Программа сама автоматически переоткрывает COM-порт на выбранных скоростях и проверяет указанный диапазон Slave ID.">?</span>
+            </div>
+
+            <div id="autoBaudOptions" class="autobaud-options">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label>Выберите скорости для перебора (бод):</label>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" id="btnBaudSelectCommon" class="btn btn-secondary btn-xs">Частые (9600–115200)</button>
+                  <button type="button" id="btnBaudSelectAll" class="btn btn-secondary btn-xs">Все</button>
+                </div>
+              </div>
+
+              <div class="baud-pills-grid" id="scanBaudGrid">
+                <label class="baud-pill"><input type="checkbox" value="1200"> 1200</label>
+                <label class="baud-pill"><input type="checkbox" value="2400"> 2400</label>
+                <label class="baud-pill"><input type="checkbox" value="4800"> 4800</label>
+                <label class="baud-pill"><input type="checkbox" value="9600" checked> 9600</label>
+                <label class="baud-pill"><input type="checkbox" value="19200" checked> 19200</label>
+                <label class="baud-pill"><input type="checkbox" value="38400" checked> 38400</label>
+                <label class="baud-pill"><input type="checkbox" value="57600" checked> 57600</label>
+                <label class="baud-pill"><input type="checkbox" value="115200" checked> 115200</label>
+              </div>
+
+              <div class="form-group full">
+                <label for="scanParityMode">Режим перебора четности (Parity):</label>
+                <select id="scanParityMode">
+                  <option value="current" selected>Проверять только текущую четность порта (Быстро)</option>
+                  <option value="all">Перебирать все: None (8N1) ➔ Even (8E1) ➔ Odd (8O1)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; font-size:12px; font-family:var(--font-mono);">
+            <span id="scanStatusText">Готов к сканированию</span>
+            <span id="scanProgressText">0 / 0</span>
+          </div>
+
+          <div class="progress-bar-wrap">
+            <div id="scanProgressBar" class="progress-bar-fill"></div>
+          </div>
+
+          <button id="btnToggleScan" class="btn btn-primary" disabled>
+            🔍 Начать сканирование шины
+          </button>
+
+          <div class="form-group full">
+            <label>Обнаруженные устройства на шине:</label>
+            <div id="scanResultsList" class="scan-results">
+              <div style="color:var(--text-muted); text-align:center; padding:12px;">
+                Нажмите «Начать сканирование шины» для поиска активных узлов.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             ВКЛАДКА 3: КОНСТРУКТОР КАРТЫ РЕГИСТРОВ SLAVE (С ИМПОРТОМ / ЭКСПОРТОМ CSV)
+             ================================================================== -->
+        <div id="tabSlave" class="tab-content">
+
+          <!-- ШАГ 1: ВКЛЮЧЕНИЕ И БАЗОВЫЕ ПАРАМЕТРЫ ОТВЕТА -->
+          <div class="slave-step-box" style="border-color: var(--slave-color);">
+            <div class="slave-step-title">
+              <span>Шаг 1. Включение автоответчика (Modbus RTU Slave)</span>
+              <span class="help-tip tip-left" data-tip="Когда этот режим включен, ноутбук отвечает на запросы внешнего Мастера (ПЛК, панели оператора, SCADA) по таблице регистров ниже.">?</span>
+            </div>
+
+            <div class="checkbox-row" style="background: rgba(210, 168, 255, 0.08); border-color: rgba(210, 168, 255, 0.4);">
+              <label class="checkbox-label">
+                <input type="checkbox" id="slaveEnabled">
+                <span style="font-weight:700; color:var(--slave-color);">Включить автоответчик Modbus RTU Slave</span>
+              </label>
+            </div>
+
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label for="slaveId">
+                  Адрес (Slave ID)
+                  <span class="help-tip tip-right" data-tip="На какой сетевой адрес должен откликаться ноутбук. Например, 20 для имитации ЧРП или 1..5 для УВП.">?</span>
+                </label>
+                <input type="number" id="slaveId" min="1" max="247" value="20" class="mono">
+              </div>
+              <div class="form-group">
+                <label for="slaveDelay">
+                  Задержка (мс)
+                  <span class="help-tip" data-tip="Пауза перед отправкой ответа (10–20 мс), чтобы ПЛК успел переключить свой приемопередатчик RS-485 на прием.">?</span>
+                </label>
+                <input type="number" id="slaveDelay" min="0" max="500" value="15" class="mono">
+              </div>
+              <div class="form-group">
+                <label for="slaveExceptionMode">
+                  Режим ответа
+                  <span class="help-tip tip-left" data-tip="Позволяет специально ответить ПЛК кодом ошибки (например, 02 Bad Addr), чтобы проверить реакцию ПЛК на аварию.">?</span>
+                </label>
+                <select id="slaveExceptionMode">
+                  <option value="0" selected>Штатный (OK)</option>
+                  <option value="1">Ошибка 01 Illegal Fn</option>
+                  <option value="2">Ошибка 02 Bad Addr</option>
+                  <option value="3">Ошибка 03 Bad Value</option>
+                  <option value="4">Ошибка 04 Slave Fail</option>
+                  <option value="6">Ошибка 06 Slave Busy</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- ШАГ 2: ЗАГРУЗКА / ВЫГРУЗКА CSV И ДОБАВЛЕНИЕ СВОИХ РЕГИСТРОВ -->
+          <div class="slave-step-box">
+            <div class="slave-step-title">
+              <span>Шаг 2. Управление картой регистров (Строгий стандарт CSV)</span>
+              <span class="help-tip tip-left" data-tip="В CSV-карте используется строгая промышленная классификация областей памяти: 0x Coils, 1x Inputs, 3x Input Registers, 4x Holding Registers.">?</span>
+            </div>
+
+            <input type="file" id="csvFileInput" accept=".csv,.txt" style="display:none;">
+
+            <div class="csv-toolbar">
+              <button type="button" class="btn btn-primary btn-sm" id="btnImportCsv" title="Загрузить карту регистров из файла CSV">
+                📥 Загрузить CSV
+              </button>
+              <button type="button" class="btn btn-success btn-sm" id="btnExportSlaveCsv" title="Сохранить текущую таблицу регистров в строгом формате CSV">
+                📤 Сохранить CSV
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnDownloadSampleCsv" title="Скачать эталонный образец CSV-файла со стандартными областями памяти 0x..4x">
+                📄 Образец CSV
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnSortSlaveMap" title="Отсортировать таблицу по области памяти (0x..4x) и возрастанию адреса">
+                ⇅ Сортировать
+              </button>
+              <button type="button" class="btn btn-danger btn-sm" id="btnClearSlaveMap" title="Очистить всю таблицу регистров">
+                🗑
+              </button>
+            </div>
+
+            <!-- Двухстрочная панель добавления регистра без обрезки названий -->
+            <div class="add-reg-bar">
+              <div class="form-group">
+                <label for="newTagArea">
+                  Область памяти (Memory Area)
+                  <span class="help-tip tip-right" data-tip="0x Coils (1-10000, 1 Bit); 1x Inputs (10001-20000, 1 Bit); 3x Input Registers (30001-40000, 16 Bit); 4x Holding Registers (40001-50000, 16 Bit).">?</span>
+                </label>
+                <select id="newTagArea">
+                  <option value="coil">0x Coils (Fn 01/05)</option>
+                  <option value="di">1x Inputs (Fn 02)</option>
+                  <option value="input">3x Input Registers (Fn 04)</option>
+                  <option value="holding" selected>4x Holding Registers (Fn 03/06/16)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="newTagAddr">
+                  Адрес (с 0)
+                  <span class="help-tip" data-tip="Реальный адрес регистра DEC (например 560) или HEX (например 0x0230).">?</span>
+                </label>
+                <input type="text" id="newTagAddr" value="0" class="mono" placeholder="0 или 0x0230">
+              </div>
+              <div class="form-group">
+                <label for="newTagVal">Значение</label>
+                <input type="number" id="newTagVal" value="0" class="mono">
+              </div>
+            </div>
+
+            <div class="add-reg-bar-bottom">
+              <div class="form-group">
+                <label for="newTagName">Название параметра (Описание регистра)</label>
+                <input type="text" id="newTagName" placeholder="Напр: ЧРП: Задание частоты вращения (0.01 Гц)">
+              </div>
+              <button type="button" id="btnAddSlaveTag" class="btn btn-primary" style="height: 31px; padding: 0 14px;" title="Добавить этот регистр в таблицу">
+                + Добавить в карту
+              </button>
+            </div>
+          </div>
+
+          <!-- ШАГ 3: ЖИВАЯ ТАБЛИЦА КАРТЫ РЕГИСТРОВ ВЕДОМОГО ПРИБОРА -->
+          <div class="slave-step-box">
+            <div class="slave-step-title">
+              <span>Шаг 3. Таблица регистров эмулируемого устройства</span>
+              <span class="help-tip tip-left" data-tip="В первой колонке отображается стандартный код области памяти (0x..4x), реальный адрес с нуля и стандартный адрес Modicon в скобках.">?</span>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+              <label class="checkbox-label" style="font-size:11.5px;">
+                <input type="checkbox" id="slaveAutoCapture" checked>
+                <span>Авто-перехват запросов ПЛК</span>
+                <span class="help-tip tip-right" data-tip="Если ПЛК запросит адрес, которого еще нет в таблице, программа сама добавит его в список с нужной областью памяти (0x..4x)!">?</span>
+              </label>
+
+              <label class="checkbox-label" style="font-size:11.5px; color: var(--rx-color);">
+                <input type="checkbox" id="slaveSimDynamic">
+                <span>Включить дрейф отмеченных</span>
+                <span class="help-tip tip-left" data-tip="Плавно меняет каждую секунду значения тех строк, у которых стоит галочка в колонке «Др.».">?</span>
+              </label>
+            </div>
+
+            <div class="slave-reg-table-wrap">
+              <table class="slave-table">
+                <thead>
+                  <tr>
+                    <th class="col-s-addr">Область / Адрес</th>
+                    <th class="col-s-name">Название параметра</th>
+                    <th class="col-s-val">Значение</th>
+                    <th class="col-s-drift" title="Имитировать плавное колебание этого параметра">Др.</th>
+                    <th class="col-s-act">Обмен с ПЛК</th>
+                    <th class="col-s-del"></th>
+                  </tr>
+                </thead>
+                <tbody id="slaveRegTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ==================================================================
+             ВКЛАДКА 4: ОТПРАВКА СЫРЫХ ДАННЫХ (HEX / ASCII)
+             ================================================================== -->
+        <div id="tabRaw" class="tab-content">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="rawFormat">Формат ввода</label>
+              <select id="rawFormat">
+                <option value="hex" selected>HEX-байты (через пробел)</option>
+                <option value="ascii">ASCII-строка (Текст)</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="rawEolGroup" style="display:none;">
+              <label for="rawEol">Окончание строки (EOL)</label>
+              <select id="rawEol">
+                <option value="none">Без окончания</option>
+                <option value="cr">CR (\r — 0x0D)</option>
+                <option value="lf">LF (\n — 0x0A)</option>
+                <option value="crlf" selected>CRLF (\r\n — 0x0D 0x0A)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group full">
+            <label for="rawPayload" id="rawPayloadLabel">Произвольный массив HEX-байт:</label>
+            <textarea id="rawPayload" rows="3" class="mono">01 03 04 00 00 02 C5 3B</textarea>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button id="btnAppendCrc" class="btn btn-secondary" style="flex: 1;">
+              + Дописать CRC-16
+            </button>
+            <button id="btnSendRaw" class="btn btn-success" style="flex: 1;" disabled>
+              Отправить «как есть»
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================================================================
+             ВКЛАДКА 5: КАЛЬКУЛЯТОРЫ И СПРАВОЧНИК В ВЫПАДАЮЩИХ СПИСКАХ (АККОРДЕОН)
+             ================================================================== -->
+        <div id="tabGuide" class="tab-content">
+
+          <!-- 1. ДВУСТОРОННИЙ КАЛЬКУЛЯТОР: MODICON (40561) <-> РЕАЛЬНЫЙ АДРЕС (560) -->
+          <details class="guide-dropdown" open>
+            <summary class="guide-summary">
+              <span>🔄 Калькулятор: Реальный адрес (560) ⇄ Стандарт Modicon (40561)</span>
+            </summary>
+            <div class="guide-body">
+              <p style="color:var(--text-muted);">
+                Переводит чистый адрес из лога (например <b>560</b>) в стандартную запись областей памяти Modbus (<b>40561</b> / <b>K40561</b>) и обратно:
+              </p>
+
+              <div class="form-grid-modcalc">
+                <div class="form-group">
+                  <label for="modCalcArea">Область памяти (Memory Area)</label>
+                  <select id="modCalcArea">
+                    <option value="coil">0x Coils (Fn 01/05)</option>
+                    <option value="di">1x Inputs (Fn 02)</option>
+                    <option value="input">3x Input Registers (Fn 04)</option>
+                    <option value="holding" selected>4x Holding Registers (Fn 03/06/16)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="modCalcRaw">Адрес (с 0)</label>
+                  <input type="number" id="modCalcRaw" min="0" max="65535" value="560" class="mono" placeholder="Напр: 560">
+                </div>
+                <div class="form-group">
+                  <label for="modCalcStd">Стандарт Modicon</label>
+                  <input type="text" id="modCalcStd" value="40561" class="mono" placeholder="Напр: 40561">
+                </div>
+              </div>
+
+              <div id="modCalcExplain" class="calc-result-box">
+                <div>Область: <b style="color:var(--accent-blue)">4x Holding Registers</b> | Адрес в проводе: <b style="color:var(--rx-color)">560</b> (<b>0x0230</b>)</div>
+                <div>Стандарт Modicon / DirectSOFT: <b style="color:var(--tx-color)">40561 (K40561)</b> (Формула: <code>40001 + 560 = 40561</code>)</div>
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <button type="button" id="btnModCalcToMaster" class="btn btn-primary btn-sm">
+                  ➔ Подставить в «Мастер»
+                </button>
+                <button type="button" id="btnModCalcToSlave" class="btn btn-secondary btn-sm">
+                  + Добавить в карту «Слейв»
+                </button>
+              </div>
+            </div>
+          </details>
+
+          <!-- 2. КАЛЬКУЛЯТОР ВОСЬМЕРИЧНЫХ ЯЧЕЕК ПЛК DIRECTLOGIC (V2000 -> 1024) -->
+          <details class="guide-dropdown" open>
+            <summary class="guide-summary">
+              <span>🧮 Калькулятор восьмеричной памяти ПЛК DirectLOGIC (V2000 ➔ 1024)</span>
+            </summary>
+            <div class="guide-body">
+              <p style="color:var(--text-muted);">
+                Введите ячейку внутренней памяти ПЛК DL06 / DL260 (например: <b>V2000</b>, <b>V400</b>, <b>X0</b>, <b>Y0</b>, <b>C0</b>), чтобы получить её десятичный адрес Modbus:
+              </p>
+              <div class="form-grid">
+                <input type="text" id="dlAddrInput" value="V2000" class="mono" placeholder="Например: V2000 или C0">
+                <button type="button" id="btnApplyDlAddr" class="btn btn-primary btn-sm">Подставить в «Мастер»</button>
+              </div>
+              <div id="dlCalcResult" class="calc-result-box">
+                <span>V2000 (Octal) ➔ DEC: <b style="color:var(--rx-color)">1024</b> (0x0400) | 4x Holding Registers: <b style="color:var(--tx-color)">K41025</b></span>
+              </div>
+            </div>
+          </details>
+
+          <!-- 3. ТАБЛИЦА СТАНДАРТА MODBUS MEMORY AREAS (0x - 4x) -->
+          <details class="guide-dropdown">
+            <summary class="guide-summary">
+              <span>📐 Промышленный стандарт: 4 области памяти Modbus (0x – 4x)</span>
+            </summary>
+            <div class="guide-body">
+              <p style="color:var(--text-muted);">
+                Во всех вкладках приложения и в CSV-картах используется единая классификация областей памяти <b>Modbus Memory Areas</b>:
+              </p>
+              <table class="std-area-table">
+                <thead>
+                  <tr>
+                    <th>Код и Область памяти</th>
+                    <th>Диапазон Modicon</th>
+                    <th>Размер</th>
+                    <th>Функции Modbus</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><b style="color:var(--slave-color)">0x Coils</b></td>
+                    <td>00001 – 10000</td>
+                    <td>1 Bit (Чт/Зап)</td>
+                    <td>Fn 01, Fn 05, Fn 15</td>
+                  </tr>
+                  <tr>
+                    <td><b style="color:var(--warn-color)">1x Inputs</b></td>
+                    <td>10001 – 20000</td>
+                    <td>1 Bit (Только Чт)</td>
+                    <td>Fn 02</td>
+                  </tr>
+                  <tr>
+                    <td><b style="color:var(--rx-color)">3x Input Registers</b></td>
+                    <td>30001 – 40000</td>
+                    <td>16 Bit (Только Чт)</td>
+                    <td>Fn 04</td>
+                  </tr>
+                  <tr>
+                    <td><b style="color:var(--tx-color)">4x Holding Registers</b></td>
+                    <td>40001 – 50000</td>
+                    <td>16 Bit (Чт/Зап)</td>
+                    <td>Fn 03, Fn 06, Fn 16</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <!-- 4. СТРОГИЙ СТАНДАРТ ФОРМАТА CSV -->
+          <details class="guide-dropdown">
+            <summary class="guide-summary">
+              <span>📄 Строгий стандарт заполнения CSV-карты регистров</span>
+            </summary>
+            <div class="guide-body">
+              <ul>
+                <li>Файл CSV содержит ровно 5 колонок с разделителем точка с запятой <code>;</code>:<br>
+                    <code>Область памяти;Адрес;Название;Значение;Дрейф</code></li>
+                <li><b>Колонка 1 (Область памяти)</b> — указывается строго одно из 4 стандартных значений:
+                  <br>• <code>0x Coils</code>
+                  <br>• <code>1x Inputs</code>
+                  <br>• <code>3x Input Registers</code>
+                  <br>• <code>4x Holding Registers</code>
+                </li>
+                <li><b>Колонка 2 (Адрес):</b> реальный десятичный адрес с нуля (например <code>560</code>) или HEX (<code>0x0230</code>).</li>
+                <li><b>Колонка 3 (Название):</b> наименование технологического параметра.</li>
+                <li><b>Колонка 4 (Значение):</b> целое число (для 16-битных регистров <code>0..65535</code>, для битовых областей <code>0</code> или <code>1</code>).</li>
+                <li><b>Колонка 5 (Дрейф):</b> <code>1</code> (включен) или <code>0</code> (выключен).</li>
+              </ul>
+            </div>
+          </details>
+
+        </div>
+
+      </section>
+
+    </aside>
+
+    <!-- ПРАВАЯ КОЛОНКА: МНОГОРЕЖИМНЫЙ СНИФФЕР И ЛОГ ПАКЕТОВ -->
+    <section class="main-area">
+      <div class="panel log-panel">
+
+        <div class="log-toolbar">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-weight: 600; font-size: 12.5px; text-transform: uppercase;">Режим лога:</span>
+            <div class="mode-segmented" id="viewModeGroup">
+              <button class="mode-btn active" data-mode="modbus">Modbus Парсер</button>
+              <button class="mode-btn" data-mode="hex">Сырой HEX</button>
+              <button class="mode-btn" data-mode="ascii">Сырой ASCII</button>
+            </div>
+          </div>
+
+          <div class="log-controls">
+            <label class="checkbox-label">
+              <input type="checkbox" id="autoScroll" checked>
+              <span>Автопрокрутка</span>
+            </label>
+            <button id="btnExportCsv" class="btn btn-secondary">
+              Экспорт лога CSV
+            </button>
+            <button id="btnClearLog" class="btn btn-secondary">
+              Очистить лог
+            </button>
+          </div>
+        </div>
+
+        <div id="logContainer" class="log-table-container">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th class="col-time">Время</th>
+                <th class="col-dir">Линия / Роль</th>
+                <th class="col-hex">Данные пакета (Кадр)</th>
+                <th class="col-decoded">Дешифрация / Контроль CRC-16</th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody">
+              <tr id="emptyRow">
+                <td colspan="4" class="empty-state">
+                  Журнал обмена пуст. Откройте физический COM-порт для прослушивания шины или отправки запросов.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    /**
+     * ============================================================================
+     * RTU-BOX V3.2 — АНАЛИЗАТОР ПРОТОКОЛОВ MODBUS RTU И SERIAL DATA
+     * Стандартизация Modbus Memory Areas (0x..4x) + Перебор скоростей (Auto-Baud).
+     * ============================================================================
+     */
+
+    const STORAGE_KEY_SLAVE_TAGS = 'modbus_analyzer_slave_tags_v2';
+
+    // Единый промышленный справочник областей памяти Modbus (Modbus Memory Areas)
+    const MODBUS_MEMORY_AREAS = {
+      coil: {
+        key: 'coil',
+        csvCode: '0x Coils',
+        shortBadge: '0x Coils',
+        fullTitle: '0x Coils (00001–10000 | 1 Bit | Fn 01, 05)',
+        cls: 'area-coil',
+        base: 1,
+        defaultFn: 1,
+        isBit: true
+      },
+      di: {
+        key: 'di',
+        csvCode: '1x Inputs',
+        shortBadge: '1x Inputs',
+        fullTitle: '1x Inputs (10001–20000 | 1 Bit | Fn 02)',
+        cls: 'area-di',
+        base: 10001,
+        defaultFn: 2,
+        isBit: true
+      },
+      input: {
+        key: 'input',
+        csvCode: '3x Input Registers',
+        shortBadge: '3x Input',
+        fullTitle: '3x Input Registers (30001–40000 | 16 Bit | Fn 04)',
+        cls: 'area-input',
+        base: 30001,
+        defaultFn: 4,
+        isBit: false
+      },
+      holding: {
+        key: 'holding',
+        csvCode: '4x Holding Registers',
+        shortBadge: '4x Holding',
+        fullTitle: '4x Holding Registers (40001–50000 | 16 Bit | Fn 03, 06, 16)',
+        cls: 'area-holding',
+        base: 40001,
+        defaultFn: 3,
+        isBit: false
+      }
+    };
+
+    const state = {
+      port: null,
+      reader: null,
+      keepReading: false,
+      isConnected: false,
+
+      viewMode: 'modbus',
+      rxBuffer: [],
+      rxTimer: null,
+      lastTxBytes: null,
+      lastTxTime: 0,
+      lastModbusRequest: null,
+
+      polling: {
+        active: false,
+        timer: null,
+        awaitingResponse: false,
+        txCount: 0,
+        okCount: 0,
+        timeoutCount: 0
+      },
+
+      scanner: {
+        active: false,
+        abort: false,
+        pendingResolver: null,
+        expectedSlaveId: null,
+        sendTimestamp: 0
+      },
+
+      slave: {
+        holdingRegs: new Uint16Array(65536),
+        inputRegs: new Uint16Array(65536),
+        coils: new Uint8Array(65536),
+        discreteInputs: new Uint8Array(65536),
+        tags: [],
+        nextTagId: 1,
+        simTimer: null,
+        simTick: 0
+      },
+
+      dlCalc: {
+        decAddr: 1024,
+        recommendedFunc: 3
+      },
+
+      modCalc: {
+        area: 'holding',
+        rawAddr: 560,
+        stdStr: '40561',
+        recommendedFunc: 3
+      },
+
+      logs: [],
+      stats: { tx: 0, rx: 0, err: 0, echo: 0 }
+    };
+
+    // По умолчанию предзагружена отсортированная карта ЧРП (ID 20) для проекта DL06
+    const DEFAULT_INITIAL_TAGS = [
+      { area: 'holding', addr: 0,    name: 'ЧРП: Параметр 0 (40001)',          val: 2000,  drift: false },
+      { area: 'holding', addr: 1,    name: 'ЧРП: Параметр 1 (40002)',          val: 4000,  drift: false },
+      { area: 'holding', addr: 2,    name: 'ЧРП: Параметр 2 (40003)',          val: 6000,  drift: false },
+      { area: 'holding', addr: 3,    name: 'ЧРП: Параметр 3 (40004)',          val: 8000,  drift: false },
+      { area: 'holding', addr: 4,    name: 'ЧРП: Параметр 4 (40005)',          val: 56052, drift: false },
+      { area: 'holding', addr: 9,    name: 'ЧРП: Мониторинг 9 (40010)',        val: 0,     drift: false },
+      { area: 'holding', addr: 10,   name: 'ЧРП: Мониторинг 10 (40011)',       val: 0,     drift: false },
+      { area: 'holding', addr: 11,   name: 'ЧРП: Мониторинг 11 (40012)',       val: 0,     drift: false },
+      { area: 'holding', addr: 62,   name: 'ЧРП: Статус / Ошибка (40063)',     val: 0,     drift: false },
+      { area: 'holding', addr: 81,   name: 'ЧРП: Регистр 81 (40082)',          val: 0,     drift: false },
+      { area: 'holding', addr: 82,   name: 'ЧРП: Регистр 82 (40083)',          val: 0,     drift: false },
+      { area: 'holding', addr: 505,  name: 'ЧРП: Измерение 505 (40506)',       val: 0,     drift: false },
+      { area: 'holding', addr: 506,  name: 'ЧРП: Измерение 506 (40507)',       val: 0,     drift: false },
+      { area: 'holding', addr: 507,  name: 'ЧРП: Измерение 507 (40508)',       val: 0,     drift: false },
+      { area: 'holding', addr: 508,  name: 'ЧРП: Измерение 508 (40509)',       val: 0,     drift: false },
+      { area: 'holding', addr: 560,  name: 'ЧРП: Уставка / Команда (40561)',   val: 0,     drift: false },
+      { area: 'holding', addr: 2868, name: 'ЧРП: Диагностика 2868 (42869)',    val: 0,     drift: false },
+      { area: 'holding', addr: 2869, name: 'ЧРП: Диагностика 2869 (42870)',    val: 0,     drift: false },
+      { area: 'holding', addr: 2870, name: 'ЧРП: Диагностика 2870 (42871)',    val: 0,     drift: false },
+      { area: 'holding', addr: 2871, name: 'ЧРП: Диагностика 2871 (42872)',    val: 0,     drift: false }
+    ];
+
+    const INTERFACE_HINTS = {
+      'RS-485 2W': 'Полудуплекс (Data+, Data-). Прием и передача идут по одной витой паре. Для отсечения аппаратного эха используйте «Фильтровать собственное эхо».',
+      'RS-485 4W': 'Полный дуплекс (TX+, TX-, RX+, RX-). Линии запроса Мастера и ответа Слейва физически разделены на две пары.',
+      'RS-422':    'Полный дуплекс (TX+, TX-, RX+, RX-). Дифференциальная шина «Точка-Многоточка» с раздельными каналами RX и TX.',
+      'RS-232':    'Полный дуплекс (RXD, TXD, GND). Доступно управление потоком RTS/CTS и ручное переключение линий RTS/DTR.'
+    };
+
+    const MODBUS_EXCEPTIONS = {
+      0x01: '01 Illegal Function (Функция не поддерживается)',
+      0x02: '02 Illegal Data Address (Недопустимый адрес регистра)',
+      0x03: '03 Illegal Data Value (Недопустимое значение данных)',
+      0x04: '04 Slave Device Failure (Аппаратный сбой устройства)',
+      0x05: '05 Acknowledge (Запрос принят, выполняется)',
+      0x06: '06 Slave Device Busy (Устройство занято)',
+      0x08: '08 Memory Parity Error (Ошибка четности памяти)',
+      0x0A: '0A Gateway Path Unavailable (Шлюз недоступен)',
+      0x0B: '0B Gateway Target Failed to Respond (Устройство за шлюзом не отвечает)'
+    };
+
+    const dom = {
+      serialWarning: document.getElementById('serialWarning'),
+      statusDot: document.getElementById('statusDot'),
+      statusText: document.getElementById('statusText'),
+      slaveActiveBadge: document.getElementById('slaveActiveBadge'),
+      headerSlaveId: document.getElementById('headerSlaveId'),
+      activeInterfaceBadge: document.getElementById('activeInterfaceBadge'),
+      statTx: document.getElementById('statTx'),
+      statRx: document.getElementById('statRx'),
+      statErr: document.getElementById('statErr'),
+      statEcho: document.getElementById('statEcho'),
+
+      physInterface: document.getElementById('physInterface'),
+      interfaceHint: document.getElementById('interfaceHint'),
+      baudRate: document.getElementById('baudRate'),
+      parity: document.getElementById('parity'),
+      dataBits: document.getElementById('dataBits'),
+      stopBits: document.getElementById('stopBits'),
+      flowControl: document.getElementById('flowControl'),
+      packetTimeout: document.getElementById('packetTimeout'),
+      rs232SignalsBox: document.getElementById('rs232SignalsBox'),
+      sigRTS: document.getElementById('sigRTS'),
+      sigDTR: document.getElementById('sigDTR'),
+      filterEcho: document.getElementById('filterEcho'),
+      btnConnect: document.getElementById('btnConnect'),
+
+      mbSlaveId: document.getElementById('mbSlaveId'),
+      mbFunc: document.getElementById('mbFunc'),
+      mbAddress: document.getElementById('mbAddress'),
+      mbModiconHint: document.getElementById('mbModiconHint'),
+      mbCountGroup: document.getElementById('mbCountGroup'),
+      mbCountLabel: document.getElementById('mbCountLabel'),
+      mbCountOrVal: document.getElementById('mbCountOrVal'),
+      mbCoilGroup: document.getElementById('mbCoilGroup'),
+      mbCoilVal: document.getElementById('mbCoilVal'),
+      mbMultiGroup: document.getElementById('mbMultiGroup'),
+      mbMultiValues: document.getElementById('mbMultiValues'),
+      mbPreviewBytes: document.getElementById('mbPreviewBytes'),
+      mbPreviewCrc: document.getElementById('mbPreviewCrc'),
+      btnSendModbus: document.getElementById('btnSendModbus'),
+
+      pollInterval: document.getElementById('pollInterval'),
+      btnTogglePoll: document.getElementById('btnTogglePoll'),
+      pollStateBadge: document.getElementById('pollStateBadge'),
+      pollCountTx: document.getElementById('pollCountTx'),
+      pollCountOk: document.getElementById('pollCountOk'),
+      pollCountTimeout: document.getElementById('pollCountTimeout'),
+
+      scanStartId: document.getElementById('scanStartId'),
+      scanEndId: document.getElementById('scanEndId'),
+      scanFunc: document.getElementById('scanFunc'),
+      scanTimeout: document.getElementById('scanTimeout'),
+      scanAddr: document.getElementById('scanAddr'),
+      scanQty: document.getElementById('scanQty'),
+      scanAutoBaud: document.getElementById('scanAutoBaud'),
+      autoBaudOptions: document.getElementById('autoBaudOptions'),
+      scanBaudGrid: document.getElementById('scanBaudGrid'),
+      btnBaudSelectCommon: document.getElementById('btnBaudSelectCommon'),
+      btnBaudSelectAll: document.getElementById('btnBaudSelectAll'),
+      scanParityMode: document.getElementById('scanParityMode'),
+      scanStatusText: document.getElementById('scanStatusText'),
+      scanProgressText: document.getElementById('scanProgressText'),
+      scanProgressBar: document.getElementById('scanProgressBar'),
+      btnToggleScan: document.getElementById('btnToggleScan'),
+      scanResultsList: document.getElementById('scanResultsList'),
+
+      slaveEnabled: document.getElementById('slaveEnabled'),
+      slaveId: document.getElementById('slaveId'),
+      slaveDelay: document.getElementById('slaveDelay'),
+      slaveExceptionMode: document.getElementById('slaveExceptionMode'),
+      slaveAutoCapture: document.getElementById('slaveAutoCapture'),
+      slaveSimDynamic: document.getElementById('slaveSimDynamic'),
+      slaveRegTableBody: document.getElementById('slaveRegTableBody'),
+
+      csvFileInput: document.getElementById('csvFileInput'),
+      btnImportCsv: document.getElementById('btnImportCsv'),
+      btnExportSlaveCsv: document.getElementById('btnExportSlaveCsv'),
+      btnDownloadSampleCsv: document.getElementById('btnDownloadSampleCsv'),
+      btnSortSlaveMap: document.getElementById('btnSortSlaveMap'),
+      btnClearSlaveMap: document.getElementById('btnClearSlaveMap'),
+
+      newTagArea: document.getElementById('newTagArea'),
+      newTagAddr: document.getElementById('newTagAddr'),
+      newTagName: document.getElementById('newTagName'),
+      newTagVal: document.getElementById('newTagVal'),
+      btnAddSlaveTag: document.getElementById('btnAddSlaveTag'),
+
+      rawFormat: document.getElementById('rawFormat'),
+      rawEolGroup: document.getElementById('rawEolGroup'),
+      rawEol: document.getElementById('rawEol'),
+      rawPayloadLabel: document.getElementById('rawPayloadLabel'),
+      rawPayload: document.getElementById('rawPayload'),
+      btnAppendCrc: document.getElementById('btnAppendCrc'),
+      btnSendRaw: document.getElementById('btnSendRaw'),
+
+      modCalcArea: document.getElementById('modCalcArea'),
+      modCalcRaw: document.getElementById('modCalcRaw'),
+      modCalcStd: document.getElementById('modCalcStd'),
+      modCalcExplain: document.getElementById('modCalcExplain'),
+      btnModCalcToMaster: document.getElementById('btnModCalcToMaster'),
+      btnModCalcToSlave: document.getElementById('btnModCalcToSlave'),
+
+      dlAddrInput: document.getElementById('dlAddrInput'),
+      btnApplyDlAddr: document.getElementById('btnApplyDlAddr'),
+      dlCalcResult: document.getElementById('dlCalcResult'),
+
+      viewModeGroup: document.getElementById('viewModeGroup'),
+      autoScroll: document.getElementById('autoScroll'),
+      btnExportCsv: document.getElementById('btnExportCsv'),
+      btnClearLog: document.getElementById('btnClearLog'),
+      logContainer: document.getElementById('logContainer'),
+      logTableBody: document.getElementById('logTableBody')
+    };
+
+    // ============================================================================
+    // 1. МАТЕМАТИКА CRC-16 MODBUS (0xA001) И СТАНДАРТИЗАЦИЯ ОБЛАСТЕЙ ПАМЯТИ
+    // ============================================================================
+
+    function calculateCRC16Modbus(buffer) {
+      let crc = 0xFFFF;
+      for (let pos = 0; pos < buffer.length; pos++) {
+        crc ^= buffer[pos] & 0xFF;
+        for (let i = 8; i !== 0; i--) {
+          if ((crc & 0x0001) !== 0) {
+            crc >>= 1;
+            crc ^= 0xA001;
+          } else {
+            crc >>= 1;
+          }
+        }
+      }
+      return [crc & 0xFF, (crc >> 8) & 0xFF];
+    }
+
+    function verifyPacketCRC(packet) {
+      if (!packet || packet.length < 4) {
+        return { valid: false, expectedLow: 0, expectedHigh: 0, receivedLow: 0, receivedHigh: 0 };
+      }
+      const dataPart = packet.subarray(0, packet.length - 2);
+      const [expectedLow, expectedHigh] = calculateCRC16Modbus(dataPart);
+      const receivedLow = packet[packet.length - 2];
+      const receivedHigh = packet[packet.length - 1];
+      return {
+        valid: (expectedLow === receivedLow) && (expectedHigh === receivedHigh),
+        expectedLow,
+        expectedHigh,
+        receivedLow,
+        receivedHigh
+      };
+    }
+
+    function getAreaKeyByFunc(funcCode) {
+      if (funcCode === 1 || funcCode === 5 || funcCode === 15) return 'coil';
+      if (funcCode === 2) return 'di';
+      if (funcCode === 4) return 'input';
+      return 'holding';
+    }
+
+    /** Форматирует реальный адрес (с 0) в стандартную запись Modicon (40561 / 32001 / 00001) */
+    function formatModiconAddress(areaOrFunc, rawAddr) {
+      const area = (typeof areaOrFunc === 'number') ? getAreaKeyByFunc(areaOrFunc) : areaOrFunc;
+      const offset1 = rawAddr + 1;
+      const use6Digits = offset1 > 9999;
+      const padLen = use6Digits ? 5 : 4;
+      const numPart = String(offset1).padStart(padLen, '0');
+
+      if (area === 'coil')  return '0' + numPart;
+      if (area === 'di')    return '1' + numPart;
+      if (area === 'input') return '3' + numPart;
+      return '4' + numPart;
+    }
+
+    function toHexByte(b) {
+      return (b & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+    }
+
+    function bytesToHexString(bytes) {
+      return Array.from(bytes, toHexByte).join(' ');
+    }
+
+    function bytesToAsciiString(bytes) {
+      let out = '';
+      for (let i = 0; i < bytes.length; i++) {
+        const b = bytes[i];
+        if (b === 0x0D) out += '<CR>';
+        else if (b === 0x0A) out += '<LF>';
+        else if (b === 0x09) out += '<TAB>';
+        else if (b >= 32 && b <= 126) out += String.fromCharCode(b);
+        else out += `[${toHexByte(b)}]`;
+      }
+      return out;
+    }
+
+    function arraysEqual(a, b) {
+      if (!a || !b || a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
+    }
+
+    function arrayStartsWith(full, prefix) {
+      if (!full || !prefix || full.length < prefix.length) return false;
+      for (let i = 0; i < prefix.length; i++) {
+        if (full[i] !== prefix[i]) return false;
+      }
+      return true;
+    }
+
+    function formatTimestamp(date = new Date()) {
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      const ss = String(date.getSeconds()).padStart(2, '0');
+      const ms = String(date.getMilliseconds()).padStart(3, '0');
+      return `${hh}:${mm}:${ss}.${ms}`;
+    }
+
+    function formatShortTime(date = new Date()) {
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      const ss = String(date.getSeconds()).padStart(2, '0');
+      return `${hh}:${mm}:${ss}`;
+    }
+
+    // ============================================================================
+    // 2. ДЕШИФРАТОР (ПАРСЕР) ПРОТОКОЛА MODBUS RTU (СО СТАНДАРТОМ 0x..4x)
+    // ============================================================================
+
+    function parseModbusFrame(bytes, direction) {
+      if (bytes.length < 4) {
+        const msg = `Короткий кадр (${bytes.length} байт, минимум 4 байта)`;
+        return {
+          isCrcValid: false,
+          isException: false,
+          summaryHtml: `<span class="decoded-error">Ошибка длины:</span> ${msg}`,
+          summaryText: `Ошибка длины: ${msg}`
+        };
+      }
+
+      const crcCheck = verifyPacketCRC(bytes);
+      const slaveId = bytes[0];
+      const funcCode = bytes[1];
+
+      if (!crcCheck.valid) {
+        const errHtml = `
+          <span class="decoded-error">ОШИБКА CRC-16!</span>
+          Принято: <code>${toHexByte(crcCheck.receivedLow)} ${toHexByte(crcCheck.receivedHigh)}</code>,
+          Ожидалось: <code>${toHexByte(crcCheck.expectedLow)} ${toHexByte(crcCheck.expectedHigh)}</code>
+          | ID: <b>${slaveId}</b>, Fn: <b>0x${toHexByte(funcCode)}</b>
+        `;
+        const errText = `ОШИБКА CRC-16! Принято: ${toHexByte(crcCheck.receivedLow)} ${toHexByte(crcCheck.receivedHigh)}, Ожидалось: ${toHexByte(crcCheck.expectedLow)} ${toHexByte(crcCheck.expectedHigh)}`;
+        return { isCrcValid: false, isException: false, summaryHtml: errHtml, summaryText: errText };
+      }
+
+      const idTag = `<span class="decoded-tag">ID: ${slaveId} (0x${toHexByte(slaveId)})</span>`;
+
+      if ((funcCode & 0x80) !== 0 && bytes.length === 5) {
+        const origFunc = funcCode & 0x7F;
+        const excCode = bytes[2];
+        const excDesc = MODBUS_EXCEPTIONS[excCode] || `Код 0x${toHexByte(excCode)}`;
+        return {
+          isCrcValid: true,
+          isException: true,
+          summaryHtml: `${idTag} <span class="decoded-tag" style="color:var(--warn-color)">Fn: 0x${toHexByte(funcCode)} (Исключение на Fn ${origFunc})</span> <span class="decoded-error">${excDesc}</span>`,
+          summaryText: `ID:${slaveId} Исключение Modbus (Fn 0x${toHexByte(funcCode)}): ${excDesc}`
+        };
+      }
+
+      const readU16 = (offset) => (bytes[offset] << 8) | bytes[offset + 1];
+      const isTxMaster = (direction === 'TX');
+
+      switch (funcCode) {
+        case 1:
+        case 2: {
+          const fnName = funcCode === 1 ? '01 Read Coils [0x Coils]' : '02 Read Inputs [1x Inputs]';
+          const fnTag = `<span class="decoded-tag">Fn: ${fnName}</span>`;
+          const isResponse = (direction === 'TX-SLAVE') ||
+                             (direction === 'RX' && state.lastModbusRequest && state.lastModbusRequest.id === slaveId && state.lastModbusRequest.func === funcCode && bytes.length === 5 + bytes[2]) ||
+                             (bytes.length !== 8 && bytes.length === 5 + bytes[2]);
+
+          if (!isResponse && bytes.length === 8) {
+            const startAddr = readU16(2);
+            const qty = readU16(4);
+            const modStd = formatModiconAddress(funcCode, startAddr);
+            return {
+              isCrcValid: true,
+              isException: false,
+              summaryHtml: `${idTag} ${fnTag} <b>[Запрос]</b> Адрес: <b>${startAddr}</b> <span style="color:var(--text-muted)">(${modStd})</span>, Кол-во бит: <b>${qty}</b>`,
+              summaryText: `ID:${slaveId} Fn:${fnName} [Запрос] Адрес:${startAddr} (${modStd}), Кол-во:${qty}`
+            };
+          } else if (bytes.length >= 5 && bytes.length === 5 + bytes[2]) {
+            const byteCount = bytes[2];
+            const dataBytes = bytes.subarray(3, 3 + byteCount);
+            const bitsStr = Array.from(dataBytes, b => b.toString(2).padStart(8, '0').split('').reverse().join('')).join(' ');
+            return {
+              isCrcValid: true,
+              isException: false,
+              summaryHtml: `${idTag} ${fnTag} <b>[Ответ]</b> Байт: <b>${byteCount}</b> | Биты (LSB→MSB): <code>${bitsStr}</code>`,
+              summaryText: `ID:${slaveId} Fn:${fnName} [Ответ] Байт:${byteCount} Биты:${bitsStr}`
+            };
+          }
+          break;
+        }
+
+        case 3:
+        case 4: {
+          const fnName = funcCode === 3 ? '03 Read Holding Registers [4x]' : '04 Read Input Registers [3x]';
+          const fnTag = `<span class="decoded-tag">Fn: ${fnName}</span>`;
+
+          if (bytes.length === 8 && (isTxMaster || bytes[2] !== 3)) {
+            const startAddr = readU16(2);
+            const qty = readU16(4);
+            const modStd = formatModiconAddress(funcCode, startAddr);
+            return {
+              isCrcValid: true,
+              isException: false,
+              summaryHtml: `${idTag} ${fnTag} <b>[Запрос]</b> Адрес регистра: <b>${startAddr}</b> <span style="color:var(--text-muted)">(${modStd})</span>, Кол-во: <b>${qty}</b>`,
+              summaryText: `ID:${slaveId} Fn:${fnName} [Запрос] Адрес:${startAddr} (${modStd}), Кол-во:${qty}`
+            };
+          } else if (bytes.length >= 5 && bytes.length === 5 + bytes[2]) {
+            const byteCount = bytes[2];
+            const regCount = Math.floor(byteCount / 2);
+            const regs = [];
+            for (let i = 0; i < regCount; i++) {
+              regs.push(readU16(3 + i * 2));
+            }
+            return {
+              isCrcValid: true,
+              isException: false,
+              summaryHtml: `${idTag} ${fnTag} <b>[Ответ]</b> Регистров: <b>${regCount}</b> | Значения (UINT16): <code>[${regs.join(', ')}]</code>`,
+              summaryText: `ID:${slaveId} Fn:${fnName} [Ответ] Регистров:${regCount} Значения:[${regs.join(', ')}]`
+            };
+          }
+          break;
+        }
+
+        case 5: {
+          const fnTag = `<span class="decoded-tag">Fn: 05 Write Single Coil [0x Coils]</span>`;
+          if (bytes.length === 8) {
+            const coilAddr = readU16(2);
+            const rawVal = readU16(4);
+            const modStd = formatModiconAddress(5, coilAddr);
+            const stateStr = rawVal === 0xFF00 ? 'ON (0xFF00)' : (rawVal === 0x0000 ? 'OFF (0x0000)' : `0x${rawVal.toString(16).toUpperCase()}`);
+            let role = '[Ответ]';
+            if (direction === 'TX') role = '[Запрос]';
+            else if (direction === 'RX' && dom.slaveEnabled.checked) role = '[Запрос от Мастера]';
+            else if (direction === 'TX-SLAVE') role = '[Ответ Слейва]';
+            return {
+              isCrcValid: true,
+              isException: false,
+              summaryHtml: `${idTag} ${fnTag} <b>${role}</b> Катушка: <b>${coilAddr}</b> <span style="color:var(--text-muted)">(${modStd})</span>, Состояние: <b>${stateStr}</b>`,
+              summaryText: `ID:${slaveId} Fn:05 Write Single Coil [0x Coils] ${role} Адрес:${coilAddr} (${modStd}), Значение:${stateStr}`
+            };
+          }
+          break;
+        }
+
+        case 6: {
+          const fnTag = `<span class="decoded-tag">Fn: 06 Write Single Register [4x]</span>`;
+          if (bytes.length === 8) {
+            const regAddr = readU16(2);
+            const regVal = readU16(4);
+            const modStd = formatModiconAddress(6, regAddr);
+            const signedVal = regVal > 32767 ? regVal - 65536 : regVal;
+            let role = '[Ответ]';
+            if (direction === 'TX') role = '[Запрос]';
+            else if (direction === 'RX' && dom.slaveEnabled.checked) role = '[Запрос от Мастера]';
+            else if (direction === 'TX-SLAVE') role = '[Ответ Слейва]';
+            return {
+              isCrcValid: true,
+              isException: false,
+              summaryHtml: `${idTag} ${fnTag} <b>${role}</b> Регистр: <b>${regAddr}</b> <span style="color:var(--text-muted)">(${modStd})</span>, Значение: <b>${regVal}</b> (INT16: ${signedVal})`,
+              summaryText: `ID:${slaveId} Fn:06 Write Single Register [4x] ${role} Адрес:${regAddr} (${modStd}), Значение:${regVal}`
+            };
+          }
+          break;
+        }
+
+        case 16: {
+          const fnTag = `<span class="decoded-tag">Fn: 16 (0x10) Write Multiple Registers [4x]</span>`;
+          if (bytes.length === 8) {
+            const startAddr = readU16(2);
+            const qty = readU16(4);
+            const modStd = formatModiconAddress(16, startAddr);
+            return {
+              isCrcValid: true,
+              isException: false,
+              summaryHtml: `${idTag} ${fnTag} <b>[Ответ]</b> Записано регистров: <b>${qty}</b> (с адреса <b>${startAddr}</b> / ${modStd})`,
+              summaryText: `ID:${slaveId} Fn:16 Write Multiple Registers [4x] [Ответ] Адрес:${startAddr} (${modStd}), Записано:${qty}`
+            };
+          }
+          if (bytes.length >= 9 && bytes.length === 9 + bytes[6]) {
+            const startAddr = readU16(2);
+            const qty = readU16(4);
+            const modStd = formatModiconAddress(16, startAddr);
+            const vals = [];
+            for (let i = 0; i < qty && (7 + i * 2 + 1) < bytes.length - 2; i++) {
+              vals.push(readU16(7 + i * 2));
+            }
+            return {
+              isCrcValid: true,
+              isException: false,
+              summaryHtml: `${idTag} ${fnTag} <b>[Запрос]</b> Адрес: <b>${startAddr}</b> <span style="color:var(--text-muted)">(${modStd})</span>, Кол-во: <b>${qty}</b> | Значения: <code>[${vals.join(', ')}]</code>`,
+              summaryText: `ID:${slaveId} Fn:16 Write Multiple Registers [4x] [Запрос] Адрес:${startAddr} (${modStd}), Кол-во:${qty}, Значения:[${vals.join(', ')}]`
+            };
+          }
+          break;
+        }
+      }
+
+      const payloadHex = bytesToHexString(bytes.subarray(2, bytes.length - 2));
+      return {
+        isCrcValid: true,
+        isException: false,
+        summaryHtml: `${idTag} <span class="decoded-tag">Fn: 0x${toHexByte(funcCode)}</span> Данные: <code>${payloadHex || 'нет'}</code> | CRC-16: <b>OK</b>`,
+        summaryText: `ID:${slaveId} Fn:0x${toHexByte(funcCode)} Данные:${payloadHex} CRC:OK`
+      };
+    }
+
+    // ============================================================================
+    // 3. КОНСТРУКТОР КАРТЫ РЕГИСТРОВ SLAVE + СТРОГИЙ ИМПОРТ/ЭКСПОРТ CSV
+    // ============================================================================
+
+    function getSlaveMemoryValue(area, addr) {
+      if (area === 'holding') return state.slave.holdingRegs[addr];
+      if (area === 'input')   return state.slave.inputRegs[addr];
+      if (area === 'coil')    return state.slave.coils[addr];
+      if (area === 'di')      return state.slave.discreteInputs[addr];
+      return 0;
+    }
+
+    function setSlaveMemoryValue(area, addr, val) {
+      if (area === 'holding') state.slave.holdingRegs[addr] = val & 0xFFFF;
+      else if (area === 'input') state.slave.inputRegs[addr] = val & 0xFFFF;
+      else if (area === 'coil') state.slave.coils[addr] = val ? 1 : 0;
+      else if (area === 'di') state.slave.discreteInputs[addr] = val ? 1 : 0;
+    }
+
+    function saveSlaveMapToStorage() {
+      try {
+        const serialized = state.slave.tags.map(t => ({
+          area: t.area,
+          addr: t.addr,
+          name: t.name,
+          val: getSlaveMemoryValue(t.area, t.addr),
+          drift: !!t.drift
+        }));
+        localStorage.setItem(STORAGE_KEY_SLAVE_TAGS, JSON.stringify(serialized));
+      } catch (e) {
+        console.warn('Не удалось сохранить карту в localStorage:', e);
+      }
+    }
+
+    function initSlaveMapFromStorage() {
+      let list = DEFAULT_INITIAL_TAGS;
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_SLAVE_TAGS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
+        }
+      } catch (e) {
+        console.warn('Ошибка чтения localStorage:', e);
+      }
+
+      state.slave.tags = [];
+      for (const item of list) {
+        setSlaveMemoryValue(item.area, item.addr, item.val);
+        state.slave.tags.push({
+          id: state.slave.nextTagId++,
+          area: item.area,
+          addr: item.addr,
+          name: item.name,
+          baseVal: item.val,
+          drift: !!item.drift,
+          lastAction: 'Ожидание',
+          actionType: 'none'
+        });
+      }
+      renderSlaveTagsTable();
+    }
+
+    /** Сортировка таблицы регистров по области памяти (0x -> 1x -> 3x -> 4x) и возрастанию адреса */
+    function sortSlaveTagsMap() {
+      const orderWeights = { coil: 0, di: 1, input: 2, holding: 3 };
+      state.slave.tags.sort((a, b) => {
+        const wA = orderWeights[a.area] ?? 3;
+        const wB = orderWeights[b.area] ?? 3;
+        if (wA !== wB) return wA - wB;
+        return a.addr - b.addr;
+      });
+      saveSlaveMapToStorage();
+      renderSlaveTagsTable();
+    }
+
+    /** Распознавание стандартного кода области памяти из CSV (0x Coils, 1x Inputs, 3x Input Registers, 4x Holding Registers) */
+    function parseStandardAreaCode(rawArea) {
+      const s = String(rawArea || '').trim().toLowerCase();
+      if (s.startsWith('0x') || s === '0x coils' || s === 'coils' || s === 'coil') return 'coil';
+      if (s.startsWith('1x') || s === '1x inputs' || s === 'inputs' || s === 'di') return 'di';
+      if (s.startsWith('3x') || s === '3x input registers' || s === 'input registers' || s === 'input') return 'input';
+      if (s.startsWith('4x') || s === '4x holding registers' || s === 'holding registers' || s === 'holding') return 'holding';
+      return null;
+    }
+
+    /** Экспорт карты регистров в строгом промышленном формате CSV (0x Coils .. 4x Holding Registers) */
+    function exportSlaveMapToCSV() {
+      if (state.slave.tags.length === 0) {
+        alert('Карта регистров пуста — нечего сохранять.');
+        return;
+      }
+      const lines = ['Область памяти;Адрес;Название;Значение;Дрейф'];
+      for (const tag of state.slave.tags) {
+        const areaMeta = MODBUS_MEMORY_AREAS[tag.area] || MODBUS_MEMORY_AREAS.holding;
+        const curVal = getSlaveMemoryValue(tag.area, tag.addr);
+        const cleanName = String(tag.name || '').replace(/;/g, ',').replace(/\r?\n/g, ' ');
+        const driftFlag = tag.drift ? 1 : 0;
+        lines.push(`${areaMeta.csvCode};${tag.addr};${cleanName};${curVal};${driftFlag}`);
+      }
+      const csvContent = '\uFEFF' + lines.join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `slave_register_map_ID${dom.slaveId.value || 1}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /** Скачивание эталонного образца CSV со строгими названиями областей памяти */
+    function downloadSampleSlaveCSV() {
+      const sampleLines = [
+        'Область памяти;Адрес;Название;Значение;Дрейф',
+        '0x Coils;0;ЧРП: Флаг «Привод в работе» (00001);1;0',
+        '1x Inputs;0;Дискретный вход: Концевой выключатель (10001);1;0',
+        '3x Input Registers;0;УВП: Текущая температура Т1 0.1 °C (30001);685;1',
+        '4x Holding Registers;0;ЧРП: Выходная частота 0.01 Гц (40001);2000;1',
+        '4x Holding Registers;1;ЧРП: Ток статора 0.1 А (40002);4000;1',
+        '4x Holding Registers;560;ЧРП: Уставка от ПЛК (40561);0;0'
+      ];
+      const csvContent = '\uFEFF' + sampleLines.join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'образец_карты_регистров_RTU-Box.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importSlaveMapFromCSVText(text) {
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('#') && !l.startsWith('//'));
+      if (lines.length === 0) {
+        alert('Выбранный файл пуст.');
+        return;
+      }
+
+      const importedTags = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const delimiter = line.includes(';') ? ';' : (line.includes('\t') ? '\t' : ',');
+        const parts = line.split(delimiter).map(s => s.trim().replace(/^"|"$/g, ''));
+
+        if (parts.length < 2) continue;
+
+        const area = parseStandardAreaCode(parts[0]);
+        if (!area) {
+          if (i === 0) continue; // Заголовок
+          continue;
+        }
+
+        const rawAddr = parts[1];
+        const addr = rawAddr.toLowerCase().startsWith('0x') ? parseInt(rawAddr, 16) : parseInt(rawAddr, 10);
+        if (isNaN(addr) || addr < 0 || addr > 65535) continue;
+
+        const modStd = formatModiconAddress(area, addr);
+        let name = parts[2] || `Регистр ${modStd}`;
+        // Если в старом файле было "Запрошено ПЛК (Адрес X)", дополняем номером Modicon
+        if (name.startsWith('Запрошено ПЛК (Адрес')) {
+          name = `Запрошено ПЛК (${modStd})`;
+        }
+
+        let val = parseInt(parts[3], 10) || 0;
+        if (val < 0) val = 65536 + val;
+        val = Math.min(65535, Math.max(0, val));
+
+        const rawDrift = String(parts[4] || '0').toLowerCase();
+        const drift = (rawDrift === '1' || rawDrift === 'да' || rawDrift === 'true' || rawDrift === 'yes' || rawDrift === '+');
+
+        importedTags.push({ area, addr, name, val, drift });
+      }
+
+      if (importedTags.length === 0) {
+        alert('Не удалось распознать строки регистров в файле. Проверьте формат колонок:\nОбласть памяти;Адрес;Название;Значение;Дрейф\n(Области: 0x Coils, 1x Inputs, 3x Input Registers, 4x Holding Registers)');
+        return;
+      }
+
+      state.slave.tags = [];
+      for (const item of importedTags) {
+        setSlaveMemoryValue(item.area, item.addr, item.val);
+        state.slave.tags.push({
+          id: state.slave.nextTagId++,
+          area: item.area,
+          addr: item.addr,
+          name: item.name,
+          baseVal: item.val,
+          drift: item.drift,
+          lastAction: 'Загружен CSV',
+          actionType: 'none'
+        });
+      }
+
+      saveSlaveMapToStorage();
+      renderSlaveTagsTable();
+    }
+
+    function addOrUpdateSlaveTag(area, addr, name, val, drift = false) {
+      setSlaveMemoryValue(area, addr, val);
+      let existing = state.slave.tags.find(t => t.area === area && t.addr === addr);
+      const modStd = formatModiconAddress(area, addr);
+      if (existing) {
+        if (name) existing.name = name;
+        existing.baseVal = val;
+      } else {
+        state.slave.tags.push({
+          id: state.slave.nextTagId++,
+          area,
+          addr,
+          name: name || `Параметр (${modStd})`,
+          baseVal: val,
+          drift,
+          lastAction: 'Добавлен',
+          actionType: 'none'
+        });
+      }
+      saveSlaveMapToStorage();
+      renderSlaveTagsTable();
+    }
+
+    function notifySlaveRegisterAccess(area, addr, actionType, actionLabel) {
+      let tag = state.slave.tags.find(t => t.area === area && t.addr === addr);
+
+      if (!tag && dom.slaveAutoCapture.checked) {
+        const curVal = getSlaveMemoryValue(area, addr);
+        const modStd = formatModiconAddress(area, addr);
+        tag = {
+          id: state.slave.nextTagId++,
+          area,
+          addr,
+          name: `Запрошено ПЛК (${modStd})`,
+          baseVal: curVal,
+          drift: false,
+          lastAction: actionLabel,
+          actionType
+        };
+        state.slave.tags.push(tag);
+        saveSlaveMapToStorage();
+        renderSlaveTagsTable();
+      } else if (tag) {
+        tag.lastAction = actionLabel;
+        tag.actionType = actionType;
+        updateSingleSlaveRowDOM(tag, true);
+      }
+    }
+
+    function renderSlaveTagsTable() {
+      if (state.slave.tags.length === 0) {
+        dom.slaveRegTableBody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted);">
+              Карта регистров пуста. Нажмите «📥 Загрузить CSV», «📄 Образец CSV» или добавьте адрес вручную.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      let html = '';
+      for (const tag of state.slave.tags) {
+        const aInfo = MODBUS_MEMORY_AREAS[tag.area] || MODBUS_MEMORY_AREAS.holding;
+        const hexAddr = '0x' + tag.addr.toString(16).toUpperCase().padStart(4, '0');
+        const modStd = formatModiconAddress(tag.area, tag.addr);
+        const curVal = getSlaveMemoryValue(tag.area, tag.addr);
+        const isBit = aInfo.isBit;
+        const actCls = tag.actionType === 'read' ? 'read' : (tag.actionType === 'write' ? 'write' : '');
+        const safeName = String(tag.name || '').replace(/"/g, '&quot;');
+
+        html += `
+          <tr id="slaveTagRow_${tag.id}">
+            <td class="col-s-addr mono" title="${aInfo.fullTitle} | Адрес с 0: ${tag.addr} (${hexAddr}) | Modicon: ${modStd}">
+              <div><span class="area-badge ${aInfo.cls}">${aInfo.shortBadge}</span><b>${tag.addr}</b></div>
+              <span class="modicon-sub">Modicon: ${modStd}</span>
+            </td>
+            <td class="col-s-name">
+              <input type="text" class="tag-name-input" value="${safeName}" title="${safeName}"
+                     data-tag-id="${tag.id}" data-field="name" placeholder="Введите название параметра">
+            </td>
+            <td class="col-s-val">
+              ${isBit
+                ? `<select data-tag-id="${tag.id}" data-field="val" class="mono">
+                     <option value="1" ${curVal ? 'selected' : ''}>1 (ON)</option>
+                     <option value="0" ${!curVal ? 'selected' : ''}>0 (OFF)</option>
+                   </select>`
+                : `<input type="number" min="-32768" max="65535" value="${curVal}" data-tag-id="${tag.id}" data-field="val">`
+              }
+            </td>
+            <td class="col-s-drift">
+              ${isBit
+                ? `<span style="color:var(--text-muted)">—</span>`
+                : `<input type="checkbox" data-tag-id="${tag.id}" data-field="drift" ${tag.drift ? 'checked' : ''} style="cursor:pointer; width:15px; height:15px;">`
+              }
+            </td>
+            <td class="col-s-act">
+              <span id="slaveTagAct_${tag.id}" class="act-pill ${actCls}" title="${tag.lastAction}">${tag.lastAction}</span>
+            </td>
+            <td class="col-s-del">
+              <button type="button" class="btn btn-secondary btn-sm" style="padding:2px 6px;" data-del-tag="${tag.id}" title="Удалить строку">✖</button>
+            </td>
+          </tr>
+        `;
+      }
+
+      dom.slaveRegTableBody.innerHTML = html;
+
+      dom.slaveRegTableBody.querySelectorAll('input, select').forEach(el => {
+        el.addEventListener('input', onSlaveTableFieldChange);
+        el.addEventListener('change', onSlaveTableFieldChange);
+      });
+
+      dom.slaveRegTableBody.querySelectorAll('button[data-del-tag]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.delTag, 10);
+          state.slave.tags = state.slave.tags.filter(t => t.id !== id);
+          saveSlaveMapToStorage();
+          renderSlaveTagsTable();
+        });
+      });
+    }
+
+    function onSlaveTableFieldChange(e) {
+      const el = e.target;
+      const tagId = parseInt(el.dataset.tagId, 10);
+      const field = el.dataset.field;
+      const tag = state.slave.tags.find(t => t.id === tagId);
+      if (!tag) return;
+
+      if (field === 'name') {
+        tag.name = el.value;
+        el.title = el.value;
+      } else if (field === 'val') {
+        let v = parseInt(el.value, 10) || 0;
+        if (v < 0) v = 65536 + v;
+        v = Math.min(65535, Math.max(0, v));
+        tag.baseVal = v;
+        setSlaveMemoryValue(tag.area, tag.addr, v);
+      } else if (field === 'drift') {
+        tag.drift = el.checked;
+      }
+      saveSlaveMapToStorage();
+    }
+
+    function updateSingleSlaveRowDOM(tag, flash = false) {
+      const row = document.getElementById(`slaveTagRow_${tag.id}`);
+      if (!row) return;
+
+      const curVal = getSlaveMemoryValue(tag.area, tag.addr);
+      const valInput = row.querySelector('[data-field="val"]');
+      if (valInput && document.activeElement !== valInput) {
+        valInput.value = String(curVal);
+      }
+
+      const actSpan = document.getElementById(`slaveTagAct_${tag.id}`);
+      if (actSpan) {
+        actSpan.textContent = tag.lastAction;
+        actSpan.title = tag.lastAction;
+        actSpan.className = 'act-pill ' + (tag.actionType === 'read' ? 'read' : (tag.actionType === 'write' ? 'write' : ''));
+      }
+
+      if (flash) {
+        row.classList.remove('reg-updated');
+        void row.offsetWidth;
+        row.classList.add('reg-updated');
+      }
+    }
+
+    function processIncomingFrameAsSlave(reqBytes) {
+      if (!dom.slaveEnabled.checked) return;
+      if (reqBytes.length < 8 && !(reqBytes.length >= 9 && reqBytes[1] === 16)) return;
+
+      const crcCheck = verifyPacketCRC(reqBytes);
+      if (!crcCheck.valid) return;
+
+      const reqSlaveId = reqBytes[0];
+      const mySlaveId = parseInt(dom.slaveId.value, 10) || 1;
+      const isBroadcast = (reqSlaveId === 0);
+
+      if (reqSlaveId !== mySlaveId && !isBroadcast) return;
+
+      const func = reqBytes[1];
+      const forcedExc = parseInt(dom.slaveExceptionMode.value, 10) || 0;
+      const delayMs = Math.max(0, parseInt(dom.slaveDelay.value, 10) || 15);
+      const timeStr = formatShortTime(new Date());
+
+      let responsePdu = null;
+
+      if (forcedExc > 0) {
+        responsePdu = [mySlaveId, func | 0x80, forcedExc];
+      } else {
+        const readU16 = (offset) => (reqBytes[offset] << 8) | reqBytes[offset + 1];
+
+        switch (func) {
+          case 1:
+          case 2: {
+            if (isBroadcast || reqBytes.length !== 8) return;
+            const startAddr = readU16(2);
+            const qty = readU16(4);
+            if (qty < 1 || qty > 2000 || (startAddr + qty) > 65536) {
+              responsePdu = [mySlaveId, func | 0x80, 0x02];
+              break;
+            }
+            const byteCount = Math.ceil(qty / 8);
+            const packed = new Uint8Array(byteCount);
+            const sourceArr = (func === 1) ? state.slave.coils : state.slave.discreteInputs;
+            const areaKey = (func === 1) ? 'coil' : 'di';
+
+            for (let i = 0; i < qty; i++) {
+              if (sourceArr[startAddr + i]) {
+                packed[Math.floor(i / 8)] |= (1 << (i % 8));
+              }
+              if (i < 16) {
+                notifySlaveRegisterAccess(areaKey, startAddr + i, 'read', `Чт Fn0${func} (${timeStr})`);
+              }
+            }
+            responsePdu = [mySlaveId, func, byteCount, ...packed];
+            break;
+          }
+
+          case 3:
+          case 4: {
+            if (isBroadcast || reqBytes.length !== 8) return;
+            const startAddr = readU16(2);
+            const qty = readU16(4);
+            if (qty < 1 || qty > 125 || (startAddr + qty) > 65536) {
+              responsePdu = [mySlaveId, func | 0x80, 0x02];
+              break;
+            }
+            const byteCount = qty * 2;
+            const dataBytes = [];
+            const sourceRegs = (func === 3) ? state.slave.holdingRegs : state.slave.inputRegs;
+            const areaKey = (func === 3) ? 'holding' : 'input';
+
+            for (let i = 0; i < qty; i++) {
+              const val = sourceRegs[startAddr + i] & 0xFFFF;
+              dataBytes.push((val >> 8) & 0xFF, val & 0xFF);
+              if (i < 32) {
+                notifySlaveRegisterAccess(areaKey, startAddr + i, 'read', `Чт Fn0${func} (${timeStr})`);
+              }
+            }
+            responsePdu = [mySlaveId, func, byteCount, ...dataBytes];
+            break;
+          }
+
+          case 5: {
+            if (reqBytes.length !== 8) return;
+            const coilAddr = readU16(2);
+            const coilVal = readU16(4);
+            if (coilVal !== 0xFF00 && coilVal !== 0x0000) {
+              responsePdu = [mySlaveId, func | 0x80, 0x03];
+              break;
+            }
+            const bitVal = (coilVal === 0xFF00) ? 1 : 0;
+            state.slave.coils[coilAddr] = bitVal;
+            notifySlaveRegisterAccess('coil', coilAddr, 'write', `Зап: ${bitVal ? 'ON' : 'OFF'}`);
+            if (!isBroadcast) {
+              responsePdu = Array.from(reqBytes.subarray(0, 6));
+            }
+            break;
+          }
+
+          case 6: {
+            if (reqBytes.length !== 8) return;
+            const regAddr = readU16(2);
+            const regVal = readU16(4);
+            state.slave.holdingRegs[regAddr] = regVal;
+            notifySlaveRegisterAccess('holding', regAddr, 'write', `Зап: ${regVal}`);
+            if (!isBroadcast) {
+              responsePdu = Array.from(reqBytes.subarray(0, 6));
+            }
+            break;
+          }
+
+          case 16: {
+            if (reqBytes.length < 9) return;
+            const startAddr = readU16(2);
+            const qty = readU16(4);
+            const byteCount = reqBytes[6];
+            if (qty < 1 || qty > 123 || byteCount !== qty * 2 || reqBytes.length !== 9 + byteCount) {
+              responsePdu = [mySlaveId, func | 0x80, 0x03];
+              break;
+            }
+            for (let i = 0; i < qty; i++) {
+              const val = readU16(7 + i * 2);
+              state.slave.holdingRegs[startAddr + i] = val;
+              if (i < 32) {
+                notifySlaveRegisterAccess('holding', startAddr + i, 'write', `Зап: ${val}`);
+              }
+            }
+            if (!isBroadcast) {
+              responsePdu = [mySlaveId, 16, (startAddr >> 8) & 0xFF, startAddr & 0xFF, (qty >> 8) & 0xFF, qty & 0xFF];
+            }
+            break;
+          }
+
+          default: {
+            if (!isBroadcast) {
+              responsePdu = [mySlaveId, func | 0x80, 0x01];
+            }
+          }
+        }
+      }
+
+      if (responsePdu && !isBroadcast) {
+        const [crcLo, crcHi] = calculateCRC16Modbus(responsePdu);
+        const fullResponse = new Uint8Array([...responsePdu, crcLo, crcHi]);
+
+        setTimeout(() => {
+          sendBytesToPort(fullResponse, null, 'TX-SLAVE');
+        }, delayMs);
+      }
+    }
+
+    // ============================================================================
+    // 4. РАБОТА С WEB SERIAL API + ДИНАМИЧЕСКАЯ СМЕНА СКОРОСТИ НА ЛЕТУ
+    // ============================================================================
+
+    function checkWebSerialSupport() {
+      if (!('serial' in navigator)) {
+        dom.serialWarning.style.display = 'block';
+        dom.btnConnect.disabled = true;
+      }
+    }
+
+    async function toggleSerialConnection() {
+      if (state.isConnected) {
+        await disconnectSerial();
+      } else {
+        await connectSerial();
+      }
+    }
+
+    async function connectSerial() {
+      try {
+        const port = await navigator.serial.requestPort();
+        const options = {
+          baudRate: parseInt(dom.baudRate.value, 10),
+          dataBits: parseInt(dom.dataBits.value, 10),
+          stopBits: parseInt(dom.stopBits.value, 10),
+          parity: dom.parity.value,
+          flowControl: dom.flowControl.value
+        };
+
+        await port.open(options);
+        state.port = port;
+        state.isConnected = true;
+        state.keepReading = true;
+
+        if (dom.physInterface.value === 'RS-232') {
+          await applyRs232Signals();
+        }
+
+        updateConnectionUI(true);
+        readSerialLoop();
+      } catch (err) {
+        console.error('Ошибка открытия порта:', err);
+        alert(`Не удалось открыть COM-порт: ${err.message}`);
+        updateConnectionUI(false);
+      }
+    }
+
+    /** Переконфигурация уже открытого COM-порта на новую скорость и четность без диалога выбора порта */
+    async function reconfigureSerialPort(newBaudRate, newParity) {
+      if (!state.port) return false;
+
+      state.keepReading = false;
+      if (state.rxTimer) {
+        clearTimeout(state.rxTimer);
+        state.rxTimer = null;
+      }
+      state.rxBuffer = [];
+
+      try {
+        if (state.reader) {
+          await state.reader.cancel();
+          state.reader.releaseLock();
+          state.reader = null;
+        }
+        await state.port.close();
+
+        dom.baudRate.value = String(newBaudRate);
+        dom.parity.value = newParity;
+
+        await state.port.open({
+          baudRate: parseInt(newBaudRate, 10),
+          dataBits: parseInt(dom.dataBits.value, 10),
+          stopBits: parseInt(dom.stopBits.value, 10),
+          parity: newParity,
+          flowControl: dom.flowControl.value
+        });
+
+        state.isConnected = true;
+        state.keepReading = true;
+        readSerialLoop();
+        // Даем драйверу USB-UART 35 мс на стабилизацию после смены частоты
+        await new Promise(r => setTimeout(r, 35));
+        return true;
+      } catch (err) {
+        console.error('Ошибка смены скорости порта:', err);
+        return false;
+      }
+    }
+
+    async function disconnectSerial() {
+      stopPolling();
+      stopBusScanner();
+      state.keepReading = false;
+
+      if (state.rxTimer) {
+        clearTimeout(state.rxTimer);
+        state.rxTimer = null;
+      }
+
+      try {
+        if (state.reader) {
+          await state.reader.cancel();
+          state.reader.releaseLock();
+          state.reader = null;
+        }
+        if (state.port) {
+          await state.port.close();
+          state.port = null;
+        }
+      } catch (err) {
+        console.warn('Закрытие порта:', err);
+      } finally {
+        state.isConnected = false;
+        updateConnectionUI(false);
+      }
+    }
+
+    async function readSerialLoop() {
+      while (state.port && state.port.readable && state.keepReading) {
+        try {
+          state.reader = state.port.readable.getReader();
+          while (true) {
+            const { value, done } = await state.reader.read();
+            if (done) break;
+            if (value && value.length > 0) {
+              onSerialBytesReceived(value);
+            }
+          }
+        } catch (err) {
+          if (state.keepReading) console.error('Ошибка чтения:', err);
+        } finally {
+          if (state.reader) {
+            try { state.reader.releaseLock(); } catch (e) {}
+            state.reader = null;
+          }
+        }
+      }
+    }
+
+    function onSerialBytesReceived(chunk) {
+      for (let i = 0; i < chunk.length; i++) {
+        state.rxBuffer.push(chunk[i]);
+      }
+      if (state.rxTimer) clearTimeout(state.rxTimer);
+
+      const timeoutMs = Math.max(5, parseInt(dom.packetTimeout.value, 10) || 20);
+      state.rxTimer = setTimeout(() => {
+        flushRxBuffer();
+      }, timeoutMs);
+    }
+
+    function flushRxBuffer() {
+      if (state.rxBuffer.length === 0) return;
+
+      let packet = new Uint8Array(state.rxBuffer);
+      state.rxBuffer = [];
+      state.rxTimer = null;
+
+      if (dom.filterEcho.checked && state.lastTxBytes) {
+        const elapsedMs = performance.now() - state.lastTxTime;
+        if (elapsedMs < 250) {
+          if (arraysEqual(packet, state.lastTxBytes)) {
+            state.stats.echo++;
+            updateStatsUI();
+            state.lastTxBytes = null;
+            return;
+          } else if (arrayStartsWith(packet, state.lastTxBytes)) {
+            packet = packet.slice(state.lastTxBytes.length);
+            state.stats.echo++;
+            updateStatsUI();
+            state.lastTxBytes = null;
+          }
+        }
+      }
+
+      const parsed = recordPacket('RX', packet);
+
+      if (state.polling.active && state.polling.awaitingResponse && parsed.isCrcValid) {
+        state.polling.awaitingResponse = false;
+        state.polling.okCount++;
+        updatePollingStatsUI();
+      }
+
+      if (state.scanner.active && state.scanner.pendingResolver) {
+        if (packet.length >= 4 && packet[0] === state.scanner.expectedSlaveId && parsed.isCrcValid) {
+          const rtt = Math.round(performance.now() - state.scanner.sendTimestamp);
+          const resolver = state.scanner.pendingResolver;
+          state.scanner.pendingResolver = null;
+          resolver({ responded: true, packet, parsed, rtt });
+        }
+      }
+
+      processIncomingFrameAsSlave(packet);
+    }
+
+    async function sendBytesToPort(bytesToSend, modbusMeta = null, roleLabel = 'TX') {
+      if (!state.isConnected || !state.port || !state.port.writable) {
+        alert('Порт не открыт! Сначала подключитесь к COM-порту.');
+        return;
+      }
+
+      try {
+        state.lastTxBytes = new Uint8Array(bytesToSend);
+        state.lastTxTime = performance.now();
+        if (roleLabel === 'TX') {
+          state.lastModbusRequest = modbusMeta;
+        }
+
+        const writer = state.port.writable.getWriter();
+        await writer.write(bytesToSend);
+        writer.releaseLock();
+
+        recordPacket(roleLabel, bytesToSend);
+      } catch (err) {
+        console.error('Ошибка передачи:', err);
+      }
+    }
+
+    async function applyRs232Signals() {
+      if (!state.isConnected || !state.port || typeof state.port.setSignals !== 'function') return;
+      try {
+        await state.port.setSignals({
+          requestToSend: dom.sigRTS.checked,
+          dataTerminalReady: dom.sigDTR.checked
+        });
+      } catch (err) {
+        console.warn('Не удалось установить сигналы RTS/DTR:', err);
+      }
+    }
+
+    // ============================================================================
+    // 5. ЦИКЛИЧЕСКИЙ АВТООПРОС (POLLING) И СКАНЕР ШИНЫ С ПЕРЕБОРОМ СКОРОСТЕЙ
+    // ============================================================================
+
+    function togglePolling() {
+      if (state.polling.active) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    }
+
+    function startPolling() {
+      if (!state.isConnected) return;
+      if (state.scanner.active) stopBusScanner();
+
+      state.polling.active = true;
+      state.polling.awaitingResponse = false;
+      state.polling.txCount = 0;
+      state.polling.okCount = 0;
+      state.polling.timeoutCount = 0;
+      updatePollingStatsUI();
+
+      dom.btnTogglePoll.textContent = '⏹ Остановить опрос';
+      dom.btnTogglePoll.className = 'btn btn-danger';
+      dom.pollStateBadge.textContent = 'АКТИВЕН';
+      dom.pollStateBadge.style.color = 'var(--rx-color)';
+
+      const executePollCycle = () => {
+        if (!state.polling.active || !state.isConnected) return;
+
+        if (state.polling.awaitingResponse) {
+          state.polling.timeoutCount++;
+        }
+
+        const built = buildModbusRequestFrame();
+        if (built) {
+          state.polling.txCount++;
+          state.polling.awaitingResponse = (built.meta.id !== 0);
+          updatePollingStatsUI();
+          sendBytesToPort(built.frame, built.meta, 'TX');
+        }
+      };
+
+      const intervalMs = Math.max(50, parseInt(dom.pollInterval.value, 10) || 500);
+      executePollCycle();
+      state.polling.timer = setInterval(executePollCycle, intervalMs);
+    }
+
+    function stopPolling() {
+      state.polling.active = false;
+      state.polling.awaitingResponse = false;
+      if (state.polling.timer) {
+        clearInterval(state.polling.timer);
+        state.polling.timer = null;
+      }
+      dom.btnTogglePoll.textContent = '▶ Запустить опрос';
+      dom.btnTogglePoll.className = 'btn btn-primary';
+      dom.pollStateBadge.textContent = 'ОСТАНОВЛЕН';
+      dom.pollStateBadge.style.color = 'var(--text-muted)';
+    }
+
+    function updatePollingStatsUI() {
+      dom.pollCountTx.textContent = state.polling.txCount;
+      dom.pollCountOk.textContent = state.polling.okCount;
+      dom.pollCountTimeout.textContent = state.polling.timeoutCount;
+    }
+
+    function toggleBusScanner() {
+      if (state.scanner.active) {
+        stopBusScanner();
+      } else {
+        startBusScanner();
+      }
+    }
+
+    async function startBusScanner() {
+      if (!state.isConnected) return;
+      if (state.polling.active) stopPolling();
+
+      let startId = Math.min(247, Math.max(1, parseInt(dom.scanStartId.value, 10) || 1));
+      let endId = Math.min(247, Math.max(1, parseInt(dom.scanEndId.value, 10) || 10));
+      if (startId > endId) [startId, endId] = [endId, startId];
+
+      const func = parseInt(dom.scanFunc.value, 10) || 3;
+      const addr = Math.min(65535, Math.max(0, parseInt(dom.scanAddr.value, 10) || 0));
+      const qty = Math.min(10, Math.max(1, parseInt(dom.scanQty.value, 10) || 1));
+      const timeoutMs = Math.max(40, parseInt(dom.scanTimeout.value, 10) || 120);
+
+      // Формируем список скоростей и четностей для прохода
+      const initialBaud = parseInt(dom.baudRate.value, 10);
+      const initialParity = dom.parity.value;
+      let baudList = [initialBaud];
+      let parityList = [initialParity];
+
+      if (dom.scanAutoBaud.checked) {
+        const checkedBoxes = Array.from(dom.scanBaudGrid.querySelectorAll('input[type="checkbox"]:checked'));
+        baudList = checkedBoxes.map(cb => parseInt(cb.value, 10)).filter(Boolean);
+        if (baudList.length === 0) {
+          alert('Выберите хотя бы одну скорость для перебора!');
+          return;
+        }
+        if (dom.scanParityMode.value === 'all') {
+          parityList = ['none', 'even', 'odd'];
+        }
+      }
+
+      state.scanner.active = true;
+      state.scanner.abort = false;
+
+      dom.btnToggleScan.textContent = '⏹ Остановить сканирование';
+      dom.btnToggleScan.className = 'btn btn-danger';
+      dom.scanResultsList.innerHTML = '';
+
+      const idsPerCombo = endId - startId + 1;
+      const totalSteps = baudList.length * parityList.length * idsPerCombo;
+      let checked = 0;
+      let foundCount = 0;
+      let lastFoundCombo = null;
+
+      const parityShortNames = { none: '8N1 (None)', even: '8E1 (Even)', odd: '8O1 (Odd)' };
+
+      for (const baud of baudList) {
+        if (state.scanner.abort || !state.isConnected) break;
+
+        for (const par of parityList) {
+          if (state.scanner.abort || !state.isConnected) break;
+
+          // Если скорость или четность отличаются от текущих настроек порта — переоткрываем порт на лету
+          if (parseInt(dom.baudRate.value, 10) !== baud || dom.parity.value !== par) {
+            dom.scanStatusText.textContent = `Переключение порта: ${baud} бод, ${parityShortNames[par]}...`;
+            const ok = await reconfigureSerialPort(baud, par);
+            if (!ok) continue;
+          }
+
+          for (let id = startId; id <= endId; id++) {
+            if (state.scanner.abort || !state.isConnected) break;
+
+            checked++;
+            dom.scanStatusText.textContent = `[${baud} | ${parityShortNames[par]}] Опрос ID = ${id}...`;
+            dom.scanProgressText.textContent = `${checked} / ${totalSteps}`;
+            dom.scanProgressBar.style.width = `${Math.round((checked / totalSteps) * 100)}%`;
+
+            const pdu = [id, func, (addr >> 8) & 0xFF, addr & 0xFF, (qty >> 8) & 0xFF, qty & 0xFF];
+            const [crcLo, crcHi] = calculateCRC16Modbus(pdu);
+            const frame = new Uint8Array([...pdu, crcLo, crcHi]);
+
+            const probeResult = await sendScannerProbe(id, frame, { id, func, addr, qty }, timeoutMs);
+
+            if (probeResult.responded) {
+              foundCount++;
+              lastFoundCombo = { baud, parity: par };
+              appendDiscoveredDeviceUI(id, baud, par, probeResult);
+            }
+
+            await new Promise(r => setTimeout(r, 25));
+          }
+        }
+      }
+
+      // Если перебирали несколько скоростей и нашли прибор — переключаем порт на скорость найденного прибора,
+      // иначе возвращаем исходную скорость порта
+      if (dom.scanAutoBaud.checked && state.isConnected) {
+        const targetBaud = lastFoundCombo ? lastFoundCombo.baud : initialBaud;
+        const targetParity = lastFoundCombo ? lastFoundCombo.parity : initialParity;
+        if (parseInt(dom.baudRate.value, 10) !== targetBaud || dom.parity.value !== targetParity) {
+          await reconfigureSerialPort(targetBaud, targetParity);
+        }
+      }
+
+      if (foundCount === 0) {
+        dom.scanResultsList.innerHTML = `
+          <div style="color:var(--text-muted); text-align:center; padding:12px;">
+            В диапазоне ID ${startId}..${endId} активных устройств не обнаружено.
+          </div>
+        `;
+      }
+
+      stopBusScanner(`Завершено (Найдено: ${foundCount})`);
+    }
+
+    function sendScannerProbe(id, frame, meta, timeoutMs) {
+      return new Promise(resolve => {
+        state.scanner.expectedSlaveId = id;
+        state.scanner.sendTimestamp = performance.now();
+
+        const timer = setTimeout(() => {
+          if (state.scanner.pendingResolver) {
+            state.scanner.pendingResolver = null;
+            resolve({ responded: false });
+          }
+        }, timeoutMs);
+
+        state.scanner.pendingResolver = (res) => {
+          clearTimeout(timer);
+          resolve(res);
+        };
+
+        sendBytesToPort(frame, meta, 'TX');
+      });
+    }
+
+    function appendDiscoveredDeviceUI(id, baud, parity, probeResult) {
+      const div = document.createElement('div');
+      const isExc = probeResult.parsed.isException;
+      div.className = isExc ? 'scan-item exc' : 'scan-item';
+
+      const parityLabels = { none: 'None (8N1)', even: 'Even (8E1)', odd: 'Odd (8O1)' };
+      const statusLabel = isExc
+        ? `<span style="color:var(--warn-color)">Ответил (Исключение Modbus)</span>`
+        : `<span style="color:var(--rx-color)">Ответил ОК</span>`;
+
+      div.innerHTML = `
+        <div>
+          <strong>Slave ID: ${id} (0x${toHexByte(id)})</strong> — ${statusLabel}
+          <div style="font-size:11px; color:#79c0ff; margin-top:2px;">
+            Скорость: <b>${baud} бод</b> | Четность: <b>${parityLabels[parity] || parity}</b>
+          </div>
+          <div style="font-size:10.5px; color:var(--text-muted);">Кадр: ${bytesToHexString(probeResult.packet)}</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <span class="badge">${probeResult.rtt} мс</span>
+          <button type="button" class="btn btn-secondary btn-xs" data-apply-baud="${baud}" data-apply-parity="${parity}" title="Установить эту скорость и четность для COM-порта">
+            Применить ${baud}
+          </button>
+        </div>
+      `;
+
+      const applyBtn = div.querySelector('button[data-apply-baud]');
+      if (applyBtn) {
+        applyBtn.addEventListener('click', async () => {
+          const b = parseInt(applyBtn.dataset.applyBaud, 10);
+          const p = applyBtn.dataset.applyParity;
+          await reconfigureSerialPort(b, p);
+          dom.mbSlaveId.value = String(id);
+          updateModbusFormAndPreview();
+        });
+      }
+
+      dom.scanResultsList.appendChild(div);
+    }
+
+    function stopBusScanner(customText = 'Сканирование остановлено') {
+      state.scanner.active = false;
+      state.scanner.abort = true;
+      if (state.scanner.pendingResolver) {
+        const r = state.scanner.pendingResolver;
+        state.scanner.pendingResolver = null;
+        r({ responded: false });
+      }
+      dom.btnToggleScan.textContent = '🔍 Начать сканирование шины';
+      dom.btnToggleScan.className = 'btn btn-primary';
+      dom.scanStatusText.textContent = customText;
+    }
+
+    // ============================================================================
+    // 6. ДВУСТОРОННИЙ КАЛЬКУЛЯТОР MODICON (40561 <-> 560) И DIRECTLOGIC (V2000)
+    // ============================================================================
+
+    function updateModiconCalcFromRaw() {
+      const area = dom.modCalcArea.value;
+      let raw = parseInt(dom.modCalcRaw.value, 10);
+      if (isNaN(raw) || raw < 0) raw = 0;
+      if (raw > 65535) raw = 65535;
+
+      const stdStr = formatModiconAddress(area, raw);
+      dom.modCalcStd.value = stdStr;
+
+      renderModiconCalcExplanation(area, raw, stdStr);
+    }
+
+    function updateModiconCalcFromStd() {
+      const cleaned = dom.modCalcStd.value.trim().toUpperCase().replace(/^K/, '');
+      if (!/^\d+$/.test(cleaned)) {
+        dom.modCalcExplain.innerHTML = `<span style="color:var(--err-color)">Введите число в стандарте Modicon (например: 40561, K40561, 32001, 00001)</span>`;
+        return;
+      }
+
+      let area = dom.modCalcArea.value;
+      let offset1 = 1;
+
+      if (cleaned.length >= 5) {
+        const firstDigit = cleaned[0];
+        const restDigits = parseInt(cleaned.slice(1), 10);
+        if (firstDigit === '4') { area = 'holding'; offset1 = restDigits; }
+        else if (firstDigit === '3') { area = 'input'; offset1 = restDigits; }
+        else if (firstDigit === '1') { area = 'di'; offset1 = restDigits; }
+        else if (firstDigit === '0') { area = 'coil'; offset1 = restDigits; }
+        else { offset1 = parseInt(cleaned, 10); }
+        dom.modCalcArea.value = area;
+      } else {
+        offset1 = parseInt(cleaned, 10);
+      }
+
+      const raw = Math.max(0, Math.min(65535, offset1 - 1));
+      dom.modCalcRaw.value = String(raw);
+      const stdStr = formatModiconAddress(area, raw);
+
+      renderModiconCalcExplanation(area, raw, stdStr);
+    }
+
+    function renderModiconCalcExplanation(area, raw, stdStr) {
+      const info = MODBUS_MEMORY_AREAS[area] || MODBUS_MEMORY_AREAS.holding;
+      const hexStr = '0x' + raw.toString(16).toUpperCase().padStart(4, '0');
+
+      state.modCalc.area = area;
+      state.modCalc.rawAddr = raw;
+      state.modCalc.stdStr = stdStr;
+      state.modCalc.recommendedFunc = info.defaultFn;
+
+      dom.modCalcExplain.innerHTML = `
+        <div>Область: <b style="color:var(--accent-blue)">${info.csvCode}</b> | Адрес с 0: <b style="color:var(--rx-color)">${raw}</b> (<b>${hexStr}</b>)</div>
+        <div>Стандарт Modicon / DirectSOFT: <b style="color:var(--tx-color)">${stdStr} (K${stdStr})</b> (База <code>${String(info.base).padStart(5,'0')} + ${raw} = ${stdStr}</code>)</div>
+      `;
+    }
+
+    function updateDirectLogicCalc() {
+      const raw = dom.dlAddrInput.value.trim().toUpperCase();
+      const match = raw.match(/^(V|X|Y|C|T|CT|S)(\d+)$/);
+
+      if (!match) {
+        dom.dlCalcResult.innerHTML = `<span style="color:var(--err-color)">Формат: V2000, V0, X0, Y0, C0 (только цифры 0..7)</span>`;
+        return;
+      }
+
+      const type = match[1];
+      const octStr = match[2];
+
+      if (/[89]/.test(octStr)) {
+        dom.dlCalcResult.innerHTML = `<span style="color:var(--err-color)">Ошибка: в восьмеричной системе ПЛК нет цифр 8 и 9!</span>`;
+        return;
+      }
+
+      const octVal = parseInt(octStr, 8);
+      let decOffset = 0;
+      let recFn = 3;
+
+      if (type === 'V') { decOffset = octVal; recFn = 3; }
+      else if (type === 'X') { decOffset = 2048 + octVal; recFn = 2; }
+      else if (type === 'Y') { decOffset = 2048 + octVal; recFn = 1; }
+      else if (type === 'C') { decOffset = 3072 + octVal; recFn = 1; }
+      else if (type === 'T') { decOffset = 1536 + octVal; recFn = 1; }
+      else if (type === 'CT') { decOffset = 1664 + octVal; recFn = 1; }
+      else if (type === 'S') { decOffset = 1024 + octVal; recFn = 1; }
+
+      state.dlCalc.decAddr = decOffset;
+      state.dlCalc.recommendedFunc = recFn;
+
+      const areaKey = getAreaKeyByFunc(recFn);
+      const areaMeta = MODBUS_MEMORY_AREAS[areaKey];
+      const hexStr = '0x' + decOffset.toString(16).toUpperCase().padStart(4, '0');
+      const modStd = formatModiconAddress(recFn, decOffset);
+      dom.dlCalcResult.innerHTML = `
+        <span>${type}${octStr} (Octal) ➔ DEC: <b style="color:var(--rx-color)">${decOffset}</b> (${hexStr}) | ${areaMeta.csvCode}: <b style="color:var(--tx-color)">K${modStd}</b></span>
+      `;
+    }
+
+    // ============================================================================
+    // 7. ЛОГИРОВАНИЕ И ОТРИСОВКА ТАБЛИЦЫ СНИФФЕРА
+    // ============================================================================
+
+    function recordPacket(direction, bytes) {
+      const timestamp = formatTimestamp(new Date());
+      const physInterface = dom.physInterface.value;
+      const parsed = parseModbusFrame(bytes, direction);
+
+      if (direction === 'TX' || direction === 'TX-SLAVE') {
+        state.stats.tx++;
+      } else {
+        state.stats.rx++;
+        if (state.viewMode === 'modbus' && !parsed.isCrcValid) {
+          state.stats.err++;
+        }
+      }
+      updateStatsUI();
+
+      const entry = {
+        id: state.logs.length + 1,
+        timestamp,
+        physInterface,
+        direction,
+        bytes: new Uint8Array(bytes),
+        parsed
+      };
+
+      state.logs.push(entry);
+      appendLogRowDOM(entry);
+      return parsed;
+    }
+
+    function formatEntryColumns(entry) {
+      const { bytes, parsed } = entry;
+
+      if (state.viewMode === 'modbus') {
+        let hexHtml = '';
+        if (bytes.length >= 4) {
+          const idHex = `<span class="byte-id" title="Device ID">${toHexByte(bytes[0])}</span>`;
+          const fnHex = `<span class="byte-fn" title="Function Code">${toHexByte(bytes[1])}</span>`;
+          const bodyBytes = bytes.subarray(2, bytes.length - 2);
+          const bodyHex = bodyBytes.length > 0 ? `<span class="byte-data">${bytesToHexString(bodyBytes)}</span>` : '';
+          const crcClass = parsed.isCrcValid ? 'byte-crc-ok' : 'byte-crc-err';
+          const crcHex = `<span class="${crcClass}" title="CRC-16">${toHexByte(bytes[bytes.length - 2])} ${toHexByte(bytes[bytes.length - 1])}</span>`;
+          hexHtml = [idHex, fnHex, bodyHex, crcHex].filter(Boolean).join(' ');
+        } else {
+          hexHtml = `<span class="byte-crc-err">${bytesToHexString(bytes)}</span>`;
+        }
+        return {
+          isErrorRow: !parsed.isCrcValid,
+          dataHtml: hexHtml,
+          decodedHtml: parsed.summaryHtml
+        };
+      }
+
+      if (state.viewMode === 'hex') {
+        return {
+          isErrorRow: false,
+          dataHtml: `<span class="byte-data">${bytesToHexString(bytes)}</span>`,
+          decodedHtml: `<span style="color:var(--text-muted)">Длина: <b>${bytes.length}</b> байт</span>`
+        };
+      }
+
+      const asciiStr = bytesToAsciiString(bytes).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return {
+        isErrorRow: false,
+        dataHtml: `<span class="byte-data">${asciiStr}</span>`,
+        decodedHtml: `<span style="color:var(--text-muted)">HEX: <code>${bytesToHexString(bytes)}</code> (${bytes.length} байт)</span>`
+      };
+    }
+
+    function getDirectionPill(entry, isErrorRow) {
+      if (isErrorRow) {
+        return `<span class="dir-pill dir-err">${entry.physInterface} | RX ERR</span>`;
+      }
+      if (entry.direction === 'TX-SLAVE') {
+        return `<span class="dir-pill dir-slave">${entry.physInterface} | SLAVE →</span>`;
+      }
+      if (entry.direction === 'TX') {
+        return `<span class="dir-pill dir-tx">${entry.physInterface} | TX →</span>`;
+      }
+      return `<span class="dir-pill dir-rx">${entry.physInterface} | RX ←</span>`;
+    }
+
+    function appendLogRowDOM(entry) {
+      const emptyRow = document.getElementById('emptyRow');
+      if (emptyRow) emptyRow.remove();
+
+      const tr = document.createElement('tr');
+      const { isErrorRow, dataHtml, decodedHtml } = formatEntryColumns(entry);
+      if (isErrorRow) tr.classList.add('row-error');
+
+      tr.innerHTML = `
+        <td class="col-time">${entry.timestamp}</td>
+        <td class="col-dir">${getDirectionPill(entry, isErrorRow)}</td>
+        <td class="col-hex">${dataHtml}</td>
+        <td class="col-decoded">${decodedHtml}</td>
+      `;
+
+      dom.logTableBody.appendChild(tr);
+      if (dom.autoScroll.checked) {
+        dom.logContainer.scrollTop = dom.logContainer.scrollHeight;
+      }
+    }
+
+    function renderAllLogs() {
+      dom.logTableBody.innerHTML = '';
+      if (state.logs.length === 0) {
+        dom.logTableBody.innerHTML = `
+          <tr id="emptyRow">
+            <td colspan="4" class="empty-state">
+              Журнал обмена пуст. Откройте физический COM-порт для прослушивания шины или отправки запросов.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      for (const entry of state.logs) {
+        const tr = document.createElement('tr');
+        const { isErrorRow, dataHtml, decodedHtml } = formatEntryColumns(entry);
+        if (isErrorRow) tr.classList.add('row-error');
+
+        tr.innerHTML = `
+          <td class="col-time">${entry.timestamp}</td>
+          <td class="col-dir">${getDirectionPill(entry, isErrorRow)}</td>
+          <td class="col-hex">${dataHtml}</td>
+          <td class="col-decoded">${decodedHtml}</td>
+        `;
+        fragment.appendChild(tr);
+      }
+
+      dom.logTableBody.appendChild(fragment);
+      if (dom.autoScroll.checked) {
+        dom.logContainer.scrollTop = dom.logContainer.scrollHeight;
+      }
+    }
+
+    // ============================================================================
+    // 8. КОНСТРУКТОР ЗАПРОСОВ МАСТЕРА И СЫРЫХ ПАКЕТОВ
+    // ============================================================================
+
+    function buildModbusRequestFrame() {
+      const slaveId = Math.min(247, Math.max(0, parseInt(dom.mbSlaveId.value, 10) || 0));
+      const func = parseInt(dom.mbFunc.value, 10);
+      const addr = Math.min(65535, Math.max(0, parseInt(dom.mbAddress.value, 10) || 0));
+
+      const addrHi = (addr >> 8) & 0xFF;
+      const addrLo = addr & 0xFF;
+
+      if (func === 1 || func === 2 || func === 3 || func === 4) {
+        const qty = Math.min(2000, Math.max(1, parseInt(dom.mbCountOrVal.value, 10) || 1));
+        const pdu = [slaveId, func, addrHi, addrLo, (qty >> 8) & 0xFF, qty & 0xFF];
+        const [crcLo, crcHi] = calculateCRC16Modbus(pdu);
+        return { frame: new Uint8Array([...pdu, crcLo, crcHi]), meta: { id: slaveId, func, addr, qty } };
+      }
+
+      if (func === 5) {
+        const coilVal = parseInt(dom.mbCoilVal.value, 10) || 0;
+        const pdu = [slaveId, func, addrHi, addrLo, (coilVal >> 8) & 0xFF, coilVal & 0xFF];
+        const [crcLo, crcHi] = calculateCRC16Modbus(pdu);
+        return { frame: new Uint8Array([...pdu, crcLo, crcHi]), meta: { id: slaveId, func, addr, qty: 1 } };
+      }
+
+      if (func === 6) {
+        let regVal = parseInt(dom.mbCountOrVal.value, 10) || 0;
+        if (regVal < 0) regVal = 65536 + regVal;
+        regVal = Math.min(65535, Math.max(0, regVal));
+        const pdu = [slaveId, func, addrHi, addrLo, (regVal >> 8) & 0xFF, regVal & 0xFF];
+        const [crcLo, crcHi] = calculateCRC16Modbus(pdu);
+        return { frame: new Uint8Array([...pdu, crcLo, crcHi]), meta: { id: slaveId, func, addr, qty: 1 } };
+      }
+
+      if (func === 16) {
+        const rawTokens = dom.mbMultiValues.value.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);
+        const regValues = rawTokens.map(tok => {
+          let v = tok.toLowerCase().startsWith('0x') ? parseInt(tok, 16) : parseInt(tok, 10);
+          if (isNaN(v)) v = 0;
+          if (v < 0) v = 65536 + v;
+          return Math.min(65535, Math.max(0, v));
+        });
+        if (regValues.length === 0) regValues.push(0);
+
+        const qty = regValues.length;
+        const byteCount = qty * 2;
+        const dataBytes = [];
+        for (const val of regValues) {
+          dataBytes.push((val >> 8) & 0xFF, val & 0xFF);
+        }
+        const pdu = [slaveId, func, addrHi, addrLo, (qty >> 8) & 0xFF, qty & 0xFF, byteCount, ...dataBytes];
+        const [crcLo, crcHi] = calculateCRC16Modbus(pdu);
+        return { frame: new Uint8Array([...pdu, crcLo, crcHi]), meta: { id: slaveId, func, addr, qty } };
+      }
+
+      return null;
+    }
+
+    function updateModbusFormAndPreview() {
+      const func = parseInt(dom.mbFunc.value, 10);
+      const addr = Math.min(65535, Math.max(0, parseInt(dom.mbAddress.value, 10) || 0));
+
+      dom.mbCountGroup.style.display = (func === 1 || func === 2 || func === 3 || func === 4 || func === 6) ? 'flex' : 'none';
+      dom.mbCoilGroup.style.display = (func === 5) ? 'flex' : 'none';
+      dom.mbMultiGroup.style.display = (func === 16) ? 'flex' : 'none';
+
+      if (func === 1 || func === 2) dom.mbCountLabel.textContent = 'Количество бит (1 Bit)';
+      else if (func === 3 || func === 4) dom.mbCountLabel.textContent = 'Количество регистров (16 Bit)';
+      else if (func === 6) dom.mbCountLabel.textContent = 'Значение регистра (0..65535)';
+
+      const areaKey = getAreaKeyByFunc(func);
+      const areaMeta = MODBUS_MEMORY_AREAS[areaKey];
+      const modStd = formatModiconAddress(func, addr);
+      dom.mbModiconHint.textContent = `${areaMeta.csvCode}: ${modStd} (K${modStd})`;
+
+      const built = buildModbusRequestFrame();
+      if (built) {
+        const { frame } = built;
+        dom.mbPreviewBytes.textContent = bytesToHexString(frame.subarray(0, frame.length - 2));
+        dom.mbPreviewCrc.textContent = bytesToHexString(frame.subarray(frame.length - 2));
+      }
+    }
+
+    function parseHexInputString(str) {
+      const cleaned = str.trim().replace(/,/g, ' ');
+      if (!cleaned) return new Uint8Array(0);
+      const tokens = cleaned.split(/\s+/);
+      const bytes = [];
+      for (const t of tokens) {
+        const val = parseInt(t.replace(/^0x/i, ''), 16);
+        if (isNaN(val) || val < 0 || val > 255) {
+          throw new Error(`Некорректный HEX-байт: "${t}"`);
+        }
+        bytes.push(val);
+      }
+      return new Uint8Array(bytes);
+    }
+
+    // ============================================================================
+    // 9. ОБНОВЛЕНИЕ UI И ПРИВЯЗКА СОБЫТИЙ
+    // ============================================================================
+
+    function updateConnectionUI(connected) {
+      dom.statusDot.className = connected ? 'dot connected' : 'dot';
+      dom.statusText.textContent = connected ? 'ПОРТ ОТКРЫТ' : 'ОТКЛЮЧЕНО';
+      dom.btnConnect.textContent = connected ? 'Закрыть COM-порт (Отключиться)' : 'Выбрать COM-порт (USB) и подключиться';
+      dom.btnConnect.className = connected ? 'btn btn-danger' : 'btn btn-primary';
+
+      dom.baudRate.disabled = connected;
+      dom.parity.disabled = connected;
+      dom.dataBits.disabled = connected;
+      dom.stopBits.disabled = connected;
+      dom.flowControl.disabled = connected;
+
+      dom.btnSendModbus.disabled = !connected;
+      dom.btnTogglePoll.disabled = !connected;
+      dom.btnToggleScan.disabled = !connected;
+      dom.btnSendRaw.disabled = !connected;
+    }
+
+    function updateStatsUI() {
+      dom.statTx.textContent = state.stats.tx;
+      dom.statRx.textContent = state.stats.rx;
+      dom.statErr.textContent = state.stats.err;
+      dom.statEcho.textContent = state.stats.echo;
+    }
+
+    function onPhysicalInterfaceChange() {
+      const iface = dom.physInterface.value;
+      dom.activeInterfaceBadge.textContent = iface;
+      dom.interfaceHint.textContent = INTERFACE_HINTS[iface] || '';
+
+      if (iface === 'RS-232') {
+        dom.rs232SignalsBox.classList.remove('hidden');
+      } else {
+        dom.rs232SignalsBox.classList.add('hidden');
+        dom.flowControl.value = 'none';
+      }
+
+      dom.filterEcho.checked = (iface === 'RS-485 2W');
+    }
+
+    function exportLogToCSV() {
+      if (state.logs.length === 0) {
+        alert('Журнал пуст — нет данных для экспорта.');
+        return;
+      }
+      const rows = ['"№";"Время";"Интерфейс";"Направление";"HEX пакета";"ASCII";"Расшифровка"'];
+      for (const item of state.logs) {
+        const hex = bytesToHexString(item.bytes);
+        const ascii = bytesToAsciiString(item.bytes).replace(/"/g, '""');
+        const desc = item.parsed.summaryText.replace(/"/g, '""');
+        rows.push(`"${item.id}";"${item.timestamp}";"${item.physInterface}";"${item.direction}";"${hex}";"${ascii}";"${desc}"`);
+      }
+      const csvContent = '\uFEFF' + rows.join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rtu_box_log_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function initEventListeners() {
+      checkWebSerialSupport();
+      initSlaveMapFromStorage();
+
+      dom.btnConnect.addEventListener('click', toggleSerialConnection);
+
+      if ('serial' in navigator) {
+        navigator.serial.addEventListener('disconnect', () => {
+          if (state.isConnected) {
+            disconnectSerial();
+            alert('USB-преобразователь был физически отключен.');
+          }
+        });
+      }
+
+      dom.physInterface.addEventListener('change', onPhysicalInterfaceChange);
+      dom.sigRTS.addEventListener('change', applyRs232Signals);
+      dom.sigDTR.addEventListener('change', applyRs232Signals);
+
+      // Вкладки инструментов
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(btn.dataset.tab).classList.add('active');
+        });
+      });
+
+      // Конструктор Modbus
+      [dom.mbSlaveId, dom.mbFunc, dom.mbAddress, dom.mbCountOrVal, dom.mbCoilVal, dom.mbMultiValues].forEach(el => {
+        el.addEventListener('input', updateModbusFormAndPreview);
+        el.addEventListener('change', updateModbusFormAndPreview);
+      });
+
+      dom.btnSendModbus.addEventListener('click', () => {
+        const built = buildModbusRequestFrame();
+        if (built) sendBytesToPort(built.frame, built.meta, 'TX');
+      });
+
+      dom.btnTogglePoll.addEventListener('click', togglePolling);
+
+      // Сканер шины и блок перебора скоростей Auto-Baud
+      dom.btnToggleScan.addEventListener('click', toggleBusScanner);
+      dom.scanAutoBaud.addEventListener('change', () => {
+        dom.autoBaudOptions.classList.toggle('visible', dom.scanAutoBaud.checked);
+      });
+
+      dom.btnBaudSelectCommon.addEventListener('click', () => {
+        const common = ['9600', '19200', '38400', '57600', '115200'];
+        dom.scanBaudGrid.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.checked = common.includes(cb.value);
+        });
+      });
+
+      dom.btnBaudSelectAll.addEventListener('click', () => {
+        dom.scanBaudGrid.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.checked = true;
+        });
+      });
+
+      // Эмулятор Slave — включение и кнопки CSV
+      dom.slaveEnabled.addEventListener('change', () => {
+        dom.slaveActiveBadge.style.display = dom.slaveEnabled.checked ? 'inline-flex' : 'none';
+        dom.headerSlaveId.textContent = dom.slaveId.value || '20';
+      });
+      dom.slaveId.addEventListener('input', () => {
+        dom.headerSlaveId.textContent = dom.slaveId.value || '20';
+      });
+
+      dom.btnImportCsv.addEventListener('click', () => {
+        dom.csvFileInput.value = '';
+        dom.csvFileInput.click();
+      });
+
+      dom.csvFileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          importSlaveMapFromCSVText(String(ev.target.result || ''));
+        };
+        reader.readAsText(file, 'utf-8');
+      });
+
+      dom.btnExportSlaveCsv.addEventListener('click', exportSlaveMapToCSV);
+      dom.btnDownloadSampleCsv.addEventListener('click', downloadSampleSlaveCSV);
+      dom.btnSortSlaveMap.addEventListener('click', sortSlaveTagsMap);
+
+      dom.btnClearSlaveMap.addEventListener('click', () => {
+        if (confirm('Очистить всю таблицу регистров эмулятора Slave?')) {
+          state.slave.tags = [];
+          saveSlaveMapToStorage();
+          renderSlaveTagsTable();
+        }
+      });
+
+      // Ручное добавление любого регистра в карту Slave
+      dom.btnAddSlaveTag.addEventListener('click', () => {
+        const area = dom.newTagArea.value;
+        const rawAddr = dom.newTagAddr.value.trim();
+        let addr = rawAddr.toLowerCase().startsWith('0x') ? parseInt(rawAddr, 16) : parseInt(rawAddr, 10);
+        if (isNaN(addr) || addr < 0 || addr > 65535) {
+          alert('Введите корректный адрес регистра от 0 до 65535 (или 0x0000..0xFFFF).');
+          return;
+        }
+        const modStd = formatModiconAddress(area, addr);
+        const name = dom.newTagName.value.trim() || `Параметр (${modStd})`;
+        let val = parseInt(dom.newTagVal.value, 10) || 0;
+        if (val < 0) val = 65536 + val;
+        val = Math.min(65535, Math.max(0, val));
+
+        addOrUpdateSlaveTag(area, addr, name, val, false);
+        dom.newTagAddr.value = String(Math.min(65535, addr + 1));
+        dom.newTagName.value = '';
+      });
+
+      // Живой дрейф отмеченных галочкой параметров на вкладке Slave
+      dom.slaveSimDynamic.addEventListener('change', () => {
+        if (dom.slaveSimDynamic.checked) {
+          state.slave.simTimer = setInterval(() => {
+            state.slave.simTick += 0.3;
+            for (const tag of state.slave.tags) {
+              if (!tag.drift || tag.area === 'coil' || tag.area === 'di') continue;
+              const base = tag.baseVal || 1000;
+              const amp = Math.max(5, Math.round(base * 0.08));
+              const newVal = Math.min(65535, Math.max(0, Math.round(base + amp * Math.sin(state.slave.simTick + tag.addr))));
+              setSlaveMemoryValue(tag.area, tag.addr, newVal);
+              updateSingleSlaveRowDOM(tag, false);
+            }
+          }, 1000);
+        } else if (state.slave.simTimer) {
+          clearInterval(state.slave.simTimer);
+          state.slave.simTimer = null;
+        }
+      });
+
+      // Двусторонний калькулятор Modicon (40561 <-> 560)
+      dom.modCalcArea.addEventListener('change', updateModiconCalcFromRaw);
+      dom.modCalcRaw.addEventListener('input', updateModiconCalcFromRaw);
+      dom.modCalcStd.addEventListener('input', updateModiconCalcFromStd);
+
+      dom.btnModCalcToMaster.addEventListener('click', () => {
+        dom.mbAddress.value = state.modCalc.rawAddr;
+        dom.mbFunc.value = String(state.modCalc.recommendedFunc);
+        dom.scanAddr.value = state.modCalc.rawAddr;
+        updateModbusFormAndPreview();
+        document.querySelector('.tab-btn[data-tab="tabModbus"]').click();
+      });
+
+      dom.btnModCalcToSlave.addEventListener('click', () => {
+        addOrUpdateSlaveTag(
+          state.modCalc.area,
+          state.modCalc.rawAddr,
+          `Регистр K${state.modCalc.stdStr}`,
+          0,
+          false
+        );
+        document.querySelector('.tab-btn[data-tab="tabSlave"]').click();
+      });
+
+      // Калькулятор адресов DirectLOGIC
+      dom.dlAddrInput.addEventListener('input', updateDirectLogicCalc);
+      dom.btnApplyDlAddr.addEventListener('click', () => {
+        updateDirectLogicCalc();
+        dom.mbAddress.value = state.dlCalc.decAddr;
+        dom.mbFunc.value = String(state.dlCalc.recommendedFunc);
+        dom.scanAddr.value = state.dlCalc.decAddr;
+        updateModbusFormAndPreview();
+        document.querySelector('.tab-btn[data-tab="tabModbus"]').click();
+      });
+
+      // Вкладка Сырые данные
+      dom.rawFormat.addEventListener('change', () => {
+        const isHex = dom.rawFormat.value === 'hex';
+        dom.rawEolGroup.style.display = isHex ? 'none' : 'flex';
+        dom.btnAppendCrc.style.display = isHex ? 'inline-flex' : 'none';
+        dom.rawPayloadLabel.textContent = isHex ? 'Произвольный массив HEX-байт:' : 'ASCII-строка (Текст):';
+      });
+
+      dom.btnAppendCrc.addEventListener('click', () => {
+        try {
+          const bytes = parseHexInputString(dom.rawPayload.value);
+          if (bytes.length === 0) return;
+          const [crcLo, crcHi] = calculateCRC16Modbus(bytes);
+          dom.rawPayload.value = bytesToHexString(new Uint8Array([...bytes, crcLo, crcHi]));
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+
+      dom.btnSendRaw.addEventListener('click', () => {
+        try {
+          let payloadBytes;
+          if (dom.rawFormat.value === 'hex') {
+            payloadBytes = parseHexInputString(dom.rawPayload.value);
+          } else {
+            let text = dom.rawPayload.value;
+            const eol = dom.rawEol.value;
+            if (eol === 'cr') text += '\r';
+            else if (eol === 'lf') text += '\n';
+            else if (eol === 'crlf') text += '\r\n';
+            payloadBytes = new TextEncoder().encode(text);
+          }
+          if (payloadBytes.length === 0) return;
+          sendBytesToPort(payloadBytes, null, 'TX');
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+
+      // Переключение режима лога
+      dom.viewModeGroup.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          dom.viewModeGroup.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.viewMode = btn.dataset.mode;
+          renderAllLogs();
+        });
+      });
+
+      dom.btnClearLog.addEventListener('click', () => {
+        state.logs = [];
+        state.stats = { tx: 0, rx: 0, err: 0, echo: 0 };
+        updateStatsUI();
+        renderAllLogs();
+      });
+
+      dom.btnExportCsv.addEventListener('click', exportLogToCSV);
+
+      onPhysicalInterfaceChange();
+      updateModbusFormAndPreview();
+      updateModiconCalcFromRaw();
+      updateDirectLogicCalc();
+    }
+
+    document.addEventListener('DOMContentLoaded', initEventListeners);
+  </script>
+</body>
+</html>
+<!-- @Dev Bukhteev N.A. -->
